@@ -1,219 +1,218 @@
-# EPOS Helm Chart Generation
+# epos-chart
 
-This repository contains a GitHub Actions workflow that automatically generates Helm charts from the Docker Compose configuration using [Katenary](https://github.com/metal-stack/katenary).
+**EPOS Helm Chart for Kubernetes Deployment**
+
+This repository hosts a GitHub Actions workflow that automatically generates Helm charts from a Docker Compose configuration using **Katenary**.
+
+---
+
+## 🛠️ Repository Structure
+
+- `.github/workflows/`: workflow to generate Helm charts via GitHub Actions  
+- `docker-compose.yaml`: service definitions to be converted  
+- `.env` / `.env.example`: environment variables for template configuration  
+- `helmcreationscript.sh`: custom script for chart creation  
+- `LICENSE`: GPL-3.0 License  
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- GitHub repository with the workflow file
-- Docker Compose file (`docker-compose.yml`)
-- Environment variables file (`.env.example`)
+- GitHub repository with the workflow `.github/workflows/helm-chart.yml`  
+- `docker-compose.yml` file with the services to be converted  
+- `.env.example` file containing example variables  
 
 ### Workflow Triggers
 
-The workflow runs automatically on:
-- **Push** to `main` or `develop` branches when Docker Compose files change
-- **Pull Requests** to `main` branch
-- **Manual trigger** via GitHub Actions UI
-- **Git tags** for releases
+The workflow is automatically triggered on:
 
-### Manual Trigger
+- Push to `main` or `develop` when `docker-compose.yml` changes  
+- Pull requests targeting `main`  
+- Manual trigger via GitHub Actions UI  
+- Release tag  
 
-You can manually trigger the workflow:
+### Manual Run
 
-1. Go to the "Actions" tab in your GitHub repository
-2. Select "Generate Helm Chart" workflow
-3. Click "Run workflow"
-4. Optionally specify a custom chart version
-5. Click "Run workflow"
+1. Navigate to **Actions** in the GitHub repository  
+2. Select the **Generate Helm Chart** workflow  
+3. Click **Run workflow**, optionally set a custom version  
 
-## 📦 Generated Artifacts
+---
 
-The workflow creates two types of artifacts:
+## 📦 Workflow Outputs
 
-### 1. Zipped Helm Chart (`epos-helm-chart-{version}-{timestamp}.zip`)
-Contains:
-- Complete Helm chart with all templates
-- Values files for different environments
-- Installation examples and scripts
-- Chart metadata
+### 1. Zipped Helm Chart
 
-### 2. Individual Chart Files (`helm-chart-files-{version}`)
-Contains:
-- Raw Helm chart directory structure
-- Separate files for easy browsing
+`epos-helm-chart-{version}-{timestamp}.zip` containing:
 
-## 🛠 Using the Generated Helm Chart
+- Complete Helm chart with templates  
+- `values.yaml` for different environments  
+- Example installation scripts  
+- Chart metadata  
 
-### Download and Extract
+### 2. Individual Chart Files
+
+`helm-chart-files-{version}` containing:
+
+- Structured chart directory with separate files for manual inspection  
+
+---
+
+## 🔧 Using the Generated Chart
 
 ```bash
-# Download from GitHub Actions artifacts or releases
+# Download and unzip the snapshot from GitHub Actions or Releases
 unzip epos-helm-chart-*.zip
 cd epos-system/
-```
 
-### Basic Installation
-
-```bash
-# Install with default values
+# Basic installation
 helm install epos-system ./
 
-# Install with custom namespace
+# With custom namespace
 helm install epos-system ./ --namespace epos-production --create-namespace
 
-# Install with custom values
+# With custom values
 helm install epos-system ./ --values examples/values-production.yaml
-```
 
-### Configuration Options
 
-Key values you can override:
+### Common Overrides
 
 ```yaml
-# Kubernetes settings
 namespace: epos-system
 ingressClass: nginx
-
-# Deployment paths
 dataportalDeployPath: /portal
 apiDeployPath: /api
 backofficeDeployPath: /backoffice
-
-# Database settings
 postgresUser: epos_user
 postgresPassword: epos_password
 postgresDb: epos_metadata
-
-# Image settings (all services support imagePullPolicy: Always)
 images:
   dataportal: epos/dataportal:latest
   gateway: epos/gateway:latest
-  # ... etc
+  # ...
 ```
 
-### Environment-Specific Deployments
+### Environment-Specific Examples
 
-#### Production
 ```bash
+# Production
 helm install epos-prod ./ \
   --namespace epos-production \
   --values examples/values-production.yaml \
   --set postgresPassword=secure-production-password \
   --set rabbitmqPassword=secure-production-password
-```
 
-#### Development
-```bash
+# Development
 helm install epos-dev ./ \
   --namespace epos-development \
   --values examples/values-development.yaml
-```
 
-#### Staging
-```bash
+# Staging
 helm install epos-staging ./ \
   --namespace epos-staging \
   --values examples/values-production.yaml \
   --set environmentType=staging
 ```
 
-## 🔧 Customizing the Workflow
+---
+
+## ⚙️ Workflow Customization
 
 ### Environment Variables
 
-Create or modify `.env.example` with your default values:
+Copy `.env.example` to `.env` and customize as needed:
 
 ```bash
-# Copy and customize
 cp .env.example .env
-# Edit .env with your specific values
+# Edit values as required
 ```
 
-### Workflow Configuration
+### Workflow File
 
-Edit `.github/workflows/helm-chart.yml` to customize:
+In `.github/workflows/helm-chart.yml` you can configure:
 
-- **Triggers**: Modify the `on:` section
-- **Chart name**: Change `HELM_CHART_NAME` environment variable
-- **Katenary version**: Update `KATENARY_VERSION` in the install step
-- **Artifact retention**: Modify `retention-days`
+* Workflow triggers (`on:`)
+* Chart name (`HELM_CHART_NAME`)
+* Katenary version (`KATENARY_VERSION`)
+* Artifact retention duration (`retention-days`)
 
 ### Chart Customization
 
 The workflow automatically:
-- Sets chart metadata from repository information
-- Creates example values files
-- Adds installation scripts
-- Validates the generated chart
 
-## 📋 Workflow Steps Overview
+* Sets chart metadata from the repository
+* Generates example `values.yaml` files
+* Adds installation scripts
+* Performs chart validation (lint, template tests)
 
-1. **Checkout**: Gets the repository code
-2. **Environment Setup**: Prepares environment variables
-3. **Install Katenary**: Downloads and installs the conversion tool
-4. **Validate**: Checks Docker Compose file syntax
-5. **Generate**: Converts Docker Compose to Helm chart
-6. **Customize**: Adds metadata and examples
-7. **Validate Chart**: Runs Helm lint and template tests
-8. **Package**: Creates zip artifacts
-9. **Upload**: Stores artifacts in GitHub
-10. **Release**: Creates releases for tagged versions
+---
 
-## 🐛 Troubleshooting
+## 🔄 Workflow Steps
 
-### Common Issues
+1. Checkout repository
+2. Setup environment variables
+3. Install Katenary
+4. Validate Docker Compose file
+5. Generate Helm chart
+6. Add metadata and examples
+7. Validate chart (lint, template)
+8. Package chart (ZIP and directory)
+9. Upload artifacts
+10. Release creation (if tag present)
 
-1. **Katenary Installation Fails**
-   - Check if the version exists in releases
-   - Verify download URL is accessible
+---
 
-2. **Chart Generation Fails**
-   - Validate Docker Compose syntax
-   - Check environment variable values
-   - Ensure all required Katenary labels are present
+## 🛠️ Troubleshooting
 
-3. **Chart Validation Fails**
-   - Review generated templates
-   - Check values.yaml syntax
-   - Verify Kubernetes resource definitions
+1. **Katenary installation failure**
 
-### Debug Mode
+   * Check available version
+   * Verify download URL accessibility
 
-To debug chart generation locally:
+2. **Chart generation failure**
+
+   * Validate syntax of `docker-compose.yml`
+   * Ensure `.env` values are provided
+   * Check Katenary-required labels
+
+3. **Chart lint/template failure**
+
+   * Inspect generated templates
+   * Validate YAML syntax and Kubernetes resources
+
+4. **Debug locally**
 
 ```bash
-# Install Katenary locally
 wget -O katenary.tar.gz "https://github.com/metal-stack/katenary/releases/download/v1.0.0/katenary_Linux_x86_64.tar.gz"
 tar -xzf katenary.tar.gz
 sudo mv katenary /usr/local/bin/
-
-# Generate chart
 katenary convert --file docker-compose.yml --output ./helm-output
-
-# Validate
 helm lint ./helm-output/epos-system/
 helm template test ./helm-output/epos-system/ --dry-run
 ```
 
+---
+
 ## 📚 Additional Resources
 
-- [Katenary Documentation](https://github.com/metal-stack/katenary)
-- [Helm Documentation](https://helm.sh/docs/)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Kubernetes Ingress Documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+* [Katenary Documentation](https://github.com/metal-stack/katenary)
+* [Helm Documentation](https://helm.sh/docs/)
+* [GitHub Actions Documentation](https://docs.github.com/en/actions)
+
+---
 
 ## 🤝 Contributing
 
-1. Fork the repository
+1. Fork this repository
 2. Create a feature branch
-3. Modify Docker Compose or workflow files
-4. Test the workflow
-5. Submit a pull request
+3. Modify `docker-compose.yml`, `.env`, workflow, etc.
+4. Test locally and via PR (workflow runs automatically)
+5. Submit a Pull Request (workflow will validate automatically)
 
-The workflow will automatically run on your PR to validate changes.
+---
 
 ## 📄 License
 
-This project is licensed under the GNU General Public License v3.0 - see the LICENSE file for details.
+Distributed under the **GNU GPL-3.0 License**. See `LICENSE` for details.
