@@ -35,7 +35,7 @@ jobs:
 
     - name: Extract branch name
       shell: bash
-      run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> env.CHART_VERSION
+      run: echo "CHART_VERSION=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> GITHUB_ENV
       id: extract_branch
 
     - name: Print Chart Version
