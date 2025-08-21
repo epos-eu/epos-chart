@@ -71,7 +71,7 @@ jobs:
         fi
         
         # Basic syntax validation
-        docker-compose config --quiet
+        docker compose config --quiet
 
     - name: Generate Helm Chart
       run: |
