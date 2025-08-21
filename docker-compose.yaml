@@ -1,0 +1,619 @@
+#    EPOS Open Source - Local installation with Docker
+#    Copyright (C) 2023  EPOS ERIC
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.'
+
+services:
+  dataportal:
+    image: "${DATAPORTAL_IMAGE}"
+    container_name: data-portal
+    ports:
+      - "80:80"
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - BASE_URL=${DEPLOY_PATH}
+      - API_HOST=${GATEWAY_HOST}
+    depends_on:
+      gateway:
+        condition: service_healthy
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/description: "EPOS Data Portal - Web frontend for the EPOS system"
+      katenary.v3/values: |-
+        - BASE_URL
+        - API_HOST
+      katenary.v3/ingress: |-
+        path: "${DATAPORTAL_DEPLOY_PATH}"
+        pathType: Prefix
+        port: 80
+        ingressClassName: "${INGRESS_CLASS}"
+        annotations:
+          nginx.ingress.kubernetes.io/rewrite-target: "${DATAPORTAL_DEPLOY_PATH}"
+
+  backofficeui:
+    image: "${BACKOFFICE_UI_IMAGE}"
+    container_name: backofficeui
+    ports:
+      - "80:80"
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - BASE_URL=${DEPLOY_PATH}
+      - API_HOST=${GATEWAY_HOST}
+    depends_on:
+      gateway:
+        condition: service_healthy
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/description: "EPOS BACKOFFICE UI - Web backoffice for the EPOS system"
+      katenary.v3/values: |-
+        - BASE_URL
+        - API_HOST
+      katenary.v3/ingress: |-
+        path: "${BACKOFFICE_DEPLOY_PATH}"
+        pathType: Prefix
+        port: 80
+        ingressClassName: "${INGRESS_CLASS}"
+        annotations:
+          nginx.ingress.kubernetes.io/rewrite-target: "${BACKOFFICE_DEPLOY_PATH}"
+
+  gateway:
+    image: "${GATEWAY_IMAGE}"
+    container_name: gateway
+    ports:
+      - "5000:5000"
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - PREFIX=${PREFIX}
+      - LOAD_RESOURCES_API=${LOAD_RESOURCES_API}
+      - LOAD_INGESTOR_API=${LOAD_INGESTOR_API}
+      - LOAD_EXTERNAL_ACCESS_API=${LOAD_EXTERNAL_ACCESS_API}
+      - LOAD_BACKOFFICE_API=${LOAD_BACKOFFICE_API}
+      - LOAD_CONVERTER_API=${LOAD_CONVERTER_API}
+      - LOAD_SHARING_API=${LOAD_SHARING_API}
+      - LOAD_EMAIL_SENDER_API=${LOAD_EMAIL_SENDER_API}
+      - IS_AAI_ENABLED=${IS_AAI_ENABLED}
+      - SECURITY_KEY=${SECURITY_KEY}
+      - AAI_SERVICE_ENDPOINT=${AAI_SERVICE_ENDPOINT}
+    healthcheck:
+      test: python3 -c 'import urllib.request; resp=urllib.request.urlopen("http://localhost:5000/api/v1/ui", timeout=5); print(f"Status {resp.getcode()}"); exit(0 if resp.getcode() == 200 else 1)' || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      resourcesservice:
+        condition: service_healthy
+      backofficeservice:
+        condition: service_healthy
+      ingestorservice:
+        condition: service_healthy
+      externalaccessservice:
+        condition: service_healthy
+      converterservice:
+        condition: service_healthy
+      converterroutine:
+        condition: service_healthy
+      sharingservice:
+        condition: service_healthy
+      emailsenderservice:
+        condition: service_healthy
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/description: "EPOS API Gateway - Central API gateway for all services"
+      katenary.v3/values: |-
+        - PREFIX
+        - LOAD_RESOURCES_API
+        - LOAD_INGESTOR_API
+        - LOAD_EXTERNAL_ACCESS_API
+        - LOAD_BACKOFFICE_API
+        - LOAD_CONVERTER_API
+        - LOAD_SHARING_API
+        - LOAD_EMAIL_SENDER_API
+        - IS_AAI_ENABLED
+        - SECURITY_KEY
+        - AAI_SERVICE_ENDPOINT
+      katenary.v3/ingress: |-
+        path: "${API_DEPLOY_PATH}"
+        pathType: Prefix
+        port: 80
+        ingressClassName: "${INGRESS_CLASS}"
+        annotations:
+          nginx.ingress.kubernetes.io/rewrite-target: "${API_DEPLOY_PATH}"
+
+  rabbitmq:
+    image: "${RABBITMQ_IMAGE}"
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_VHOST}
+    #healthcheck:
+    #  test: rabbitmq-diagnostics -q ping
+    #  interval: 30s
+    #  timeout: 10s
+    #  retries: 10
+    networks:
+      - epos_network
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/description: "RabbitMQ Message Broker"
+      katenary.v3/values: |-
+        - RABBITMQ_DEFAULT_PASS
+        - RABBITMQ_DEFAULT_USER
+        - RABBITMQ_DEFAULT_VHOST
+      katenary.v3/ports: |-
+        - 5672
+      katenary.v3/health-check: |-
+        livenessProbe:
+          exec:
+            command: ["/opt/rabbitmq/sbin/rabbitmq-diagnostics", "-q", "ping"]
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 6
+
+  resourcesservice:
+    image: "${RESOURCES_SERVICE_IMAGE}"
+    container_name: resources-service
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - BROKER_HOST=${RABBITMQ_HOST}
+      - BROKER_USERNAME=${RABBITMQ_USERNAME}
+      - BROKER_PASSWORD=${RABBITMQ_PASSWORD}
+      - BROKER_VHOST=${RABBITMQ_VHOST}
+      - FACETS_DEFAULT=${FACETS_DEFAULT}
+      - FACETS_TYPE_DEFAULT=${FACETS_TYPE_DEFAULT}
+      - APICONTEXT=${API_PATH}
+      - APIHOST=${APIHOST}
+      - MONITORING=${MONITORING}
+      - MONITORING_URL=${MONITORING_URL}
+      - MONITORING_USER=${MONITORING_USER}
+      - MONITORING_PWD=${MONITORING_PWD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRESQL_CONNECTION_STRING=${POSTGRESQL_CONNECTION_STRING}
+      - PERSISTENCE_NAME=${PERSISTENCE_NAME}
+      - CONNECTION_POOL_INIT_SIZE=${CONNECTION_POOL_INIT_SIZE}
+      - CONNECTION_POOL_MIN_SIZE=${CONNECTION_POOL_MIN_SIZE}
+      - CONNECTION_POOL_MAX_SIZE=${CONNECTION_POOL_MAX_SIZE}
+    healthcheck:
+      test: "curl --fail --silent http://localhost:8080/api/resources-service/v1/actuator/health | grep UP || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      metadatadatabase:
+        condition: service_healthy
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/description: "EPOS Resources Service"
+      katenary.v3/values: |-
+        - BROKER_HOST
+        - BROKER_USERNAME
+        - BROKER_PASSWORD
+        - BROKER_VHOST
+        - FACETS_DEFAULT
+        - FACETS_TYPE_DEFAULT
+        - APICONTEXT
+        - APIHOST
+        - MONITORING
+        - MONITORING_URL
+        - MONITORING_USER
+        - MONITORING_PWD
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+        - POSTGRES_HOST
+        - POSTGRES_PORT
+        - POSTGRES_DB
+        - POSTGRESQL_CONNECTION_STRING
+        - PERSISTENCE_NAME
+        - CONNECTION_POOL_INIT_SIZE
+        - CONNECTION_POOL_MIN_SIZE
+        - CONNECTION_POOL_MAX_SIZE
+      katenary.v3/ports: |-
+        - 8080
+
+  backofficeservice:
+    image: "${BACKOFFICE_SERVICE_IMAGE}"
+    container_name: backoffice-service
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRESQL_CONNECTION_STRING=${POSTGRESQL_CONNECTION_STRING}
+      - CONNECTION_POOL_INIT_SIZE=${CONNECTION_POOL_INIT_SIZE}
+      - CONNECTION_POOL_MIN_SIZE=${CONNECTION_POOL_MIN_SIZE}
+      - CONNECTION_POOL_MAX_SIZE=${CONNECTION_POOL_MAX_SIZE}
+      - PERSISTENCE_NAME=${PERSISTENCE_NAME}
+    healthcheck:
+      test: "curl --fail --silent http://localhost:8080/api/backoffice-service/v1/actuator/health | grep UP || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      metadatadatabase:
+        condition: service_healthy
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/description: "EPOS Backoffice Service"
+      katenary.v3/values: |-
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+        - POSTGRES_HOST
+        - POSTGRES_PORT
+        - POSTGRES_DB
+        - POSTGRESQL_CONNECTION_STRING
+        - CONNECTION_POOL_INIT_SIZE
+        - CONNECTION_POOL_MIN_SIZE
+        - CONNECTION_POOL_MAX_SIZE
+        - PERSISTENCE_NAME
+      katenary.v3/ports: |-
+        - 8080
+
+  ingestorservice:
+    image: "${INGESTOR_SERVICE_IMAGE}"
+    container_name: ingestor-service
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - PERSISTENCE_NAME=${PERSISTENCE_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRESQL_CONNECTION_STRING=${POSTGRESQL_CONNECTION_STRING}
+      - INGESTOR_HASH=${INGESTOR_HASH}
+      - CONNECTION_POOL_INIT_SIZE=${CONNECTION_POOL_INIT_SIZE}
+      - CONNECTION_POOL_MIN_SIZE=${CONNECTION_POOL_MIN_SIZE}
+      - CONNECTION_POOL_MAX_SIZE=${CONNECTION_POOL_MAX_SIZE}
+    healthcheck:
+      test: "curl --fail --silent http://localhost:8080/api/ingestor-service/v1/actuator/health | grep UP || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      metadatadatabase:
+        condition: service_healthy
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/description: "EPOS Ingestor Service"
+      katenary.v3/values: |-
+        - PERSISTENCE_NAME
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+        - POSTGRES_HOST
+        - POSTGRES_PORT
+        - POSTGRES_DB
+        - POSTGRESQL_CONNECTION_STRING
+        - INGESTOR_HASH
+        - CONNECTION_POOL_INIT_SIZE
+        - CONNECTION_POOL_MIN_SIZE
+        - CONNECTION_POOL_MAX_SIZE
+      katenary.v3/ports: |-
+        - 8080
+
+  externalaccessservice:
+    image: "${EXTERNAL_ACCESS_IMAGE}"
+    container_name: external-access-service
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - BROKER_HOST=${RABBITMQ_HOST}
+      - BROKER_USERNAME=${RABBITMQ_USERNAME}
+      - BROKER_PASSWORD=${RABBITMQ_PASSWORD}
+      - BROKER_VHOST=${RABBITMQ_VHOST}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRESQL_CONNECTION_STRING=${POSTGRESQL_CONNECTION_STRING}
+      - CONNECTION_POOL_INIT_SIZE=${CONNECTION_POOL_INIT_SIZE}
+      - CONNECTION_POOL_MIN_SIZE=${CONNECTION_POOL_MIN_SIZE}
+      - CONNECTION_POOL_MAX_SIZE=${CONNECTION_POOL_MAX_SIZE}
+    healthcheck:
+      test: "curl --fail --silent http://localhost:8080/api/external-access-service/v1/actuator/health | grep UP || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      metadatadatabase:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/description: "EPOS External Access Service"
+      katenary.v3/values: |-
+        - BROKER_HOST
+        - BROKER_USERNAME
+        - BROKER_PASSWORD
+        - BROKER_VHOST
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+        - POSTGRES_HOST
+        - POSTGRES_PORT
+        - POSTGRES_DB
+        - POSTGRESQL_CONNECTION_STRING
+        - CONNECTION_POOL_INIT_SIZE
+        - CONNECTION_POOL_MIN_SIZE
+        - CONNECTION_POOL_MAX_SIZE
+      katenary.v3/ports: |-
+        - 8080
+
+  converterservice:
+    image: "${CONVERTER_SERVICE_IMAGE}"
+    container_name: converter-service
+    volumes:
+      - converter:/opt/converter/plugins
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - BROKER_HOST=${RABBITMQ_HOST}
+      - BROKER_USERNAME=${RABBITMQ_USERNAME}
+      - BROKER_PASSWORD=${RABBITMQ_PASSWORD}
+      - BROKER_VHOST=${RABBITMQ_VHOST}
+      - LOG_LEVEL=INFO
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRESQL_CONNECTION_STRING=${POSTGRESQL_CONNECTION_STRING}
+    depends_on:
+      metadatadatabase:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: "wget --quiet --tries=1 -O - http://localhost:8080/api/converter-service/v1/actuator/health | grep -i 'healthy' || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/description: "EPOS Converter Service"
+      katenary.v3/values: |-
+        - BROKER_HOST
+        - BROKER_USERNAME
+        - BROKER_PASSWORD
+        - BROKER_VHOST
+        - LOG_LEVEL
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+        - POSTGRES_HOST
+        - POSTGRES_PORT
+        - POSTGRES_DB
+        - POSTGRESQL_CONNECTION_STRING
+      katenary.v3/ports: |-
+        - 8080
+
+  converterroutine:
+    image: "${CONVERTER_ROUTINE_IMAGE}"
+    container_name: converter-routine
+    volumes:
+      - converter:/opt/converter/plugins
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - LOG_LEVEL=INFO
+      - PERSISTENCE_NAME=${PERSISTENCE_NAME}
+      - BROKER_HOST=${RABBITMQ_HOST}
+      - BROKER_USERNAME=${RABBITMQ_USERNAME}
+      - BROKER_PASSWORD=${RABBITMQ_PASSWORD}
+      - BROKER_VHOST=${RABBITMQ_VHOST}
+      - CONVERTER_CATALOGUE_CONNECTION_STRING=${POSTGRESQL_CONNECTION_STRING}
+    depends_on:
+      metadatadatabase:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: "wget --quiet --tries=1 -O - http://localhost:8080/api/converter-routine/v1/actuator/health | grep -i 'healthy' || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/ports: |-
+        - 8080
+      katenary.v3/description: "EPOS Converter Routine"
+      katenary.v3/values: |-
+        - LOG_LEVEL
+        - PERSISTENCE_NAME
+        - BROKER_HOST
+        - BROKER_USERNAME
+        - BROKER_PASSWORD
+        - BROKER_VHOST
+        - CONVERTER_CATALOGUE_CONNECTION_STRING
+
+  emailsenderservice:
+    image: ${EMAIL_SENDER_SERVICE_IMAGE}
+    container_name: email-sender-service
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRESQL_CONNECTION_STRING=${POSTGRESQL_CONNECTION_STRING}
+      - CONNECTION_POOL_INIT_SIZE=${CONNECTION_POOL_INIT_SIZE}
+      - CONNECTION_POOL_MIN_SIZE=${CONNECTION_POOL_MIN_SIZE}
+      - CONNECTION_POOL_MAX_SIZE=${CONNECTION_POOL_MAX_SIZE}
+      - ENVIRONMENT_TYPE=${ENVIRONMENT_TYPE}
+      - SENDER=${SENDER}
+      - SENDER_NAME=${SENDER_NAME}
+      - MAIL_TYPE=${MAIL_TYPE}
+      - SENDER_DOMAIN=${SENDER_DOMAIN}
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_USER=${MAIL_USER}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - DEV_EMAILS=${DEV_EMAILS}
+      - MAIL_API_URL=${MAIL_API_URL}
+      - MAIL_API_KEY=${MAIL_API_KEY}
+      - PERSISTENCE_NAME=${PERSISTENCE_NAME}
+    healthcheck:
+      test: "curl --fail --silent http://localhost:8080/api/email-sender-service/v1/actuator/health | grep UP || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      metadatadatabase:
+        condition: service_healthy
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/ports: |-
+        - 8080
+      katenary.v3/description: "EPOS Email Sender Service"
+      katenary.v3/values: |-
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+        - POSTGRES_HOST
+        - POSTGRES_PORT
+        - POSTGRES_DB
+        - POSTGRESQL_CONNECTION_STRING
+        - CONNECTION_POOL_INIT_SIZE
+        - CONNECTION_POOL_MIN_SIZE
+        - CONNECTION_POOL_MAX_SIZE
+        - ENVIRONMENT_TYPE
+        - SENDER
+        - SENDER_NAME
+        - MAIL_TYPE
+        - SENDER_DOMAIN
+        - MAIL_HOST
+        - MAIL_USER
+        - MAIL_PASSWORD
+        - DEV_EMAILS
+        - MAIL_API_URL
+        - MAIL_API_KEY
+        - PERSISTENCE_NAME
+  
+  sharingservice:
+    image: ${SHARING_SERVICE_IMAGE}
+    container_name: sharing-service
+    networks:
+      - epos_network
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRESQL_CONNECTION_STRING=${POSTGRESQL_CONNECTION_STRING}
+      - PERSISTENCE_NAME_SHARING=${PERSISTENCE_NAME_SHARING}
+    healthcheck:
+      test: "curl --fail --silent http://localhost:8080/api/sharing-service/v1/actuator/health | grep UP || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      metadatadatabase:
+        condition: service_healthy
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/ports: |-
+        - 8080
+      katenary.v3/description: "EPOS Sharing Service"
+      katenary.v3/values: |-
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+        - POSTGRES_HOST
+        - POSTGRES_PORT
+        - POSTGRES_DB
+        - POSTGRESQL_CONNECTION_STRING
+        - PERSISTENCE_NAME_SHARING
+
+  metadatadatabase:
+    restart: always
+    image: "${METADATA_DATABASE_IMAGE}"
+    container_name: metadata-database
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - psqldata:/var/lib/postgresql
+    healthcheck:
+      test: "pg_isready -U postgres"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - epos_network
+    labels:
+      katenary.v3/deployment: |-
+        imagePullPolicy: Always
+      katenary.v3/description: "PostgreSQL Metadata Catalogue Database"
+      katenary.v3/values: |-
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+        - POSTGRES_DB
+      katenary.v3/ports: |-
+        - 5432
+
+volumes:
+  converter:
+    external: false
+  psqldata:
+    external: false
+
+networks:
+  epos_network:
