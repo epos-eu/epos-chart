@@ -57,12 +57,7 @@ jobs:
 
     - name: Install Katenary
       run: |
-        # Download and install Katenary
-        KATENARY_VERSION="v1.0.0"  # Replace with latest version
-        wget -O katenary.tar.gz "https://github.com/metal-stack/katenary/releases/download/${KATENARY_VERSION}/katenary_Linux_x86_64.tar.gz"
-        tar -xzf katenary.tar.gz
-        sudo mv katenary /usr/local/bin/
-        chmod +x /usr/local/bin/katenary
+        sh <(curl -sSL https://repo.katenary.io/Katenary/katenary/raw/branch/master/install.sh)
         
         # Verify installation
         katenary version
@@ -322,7 +317,7 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: Summary
+    - name: Summaryf
       run: |
         echo "## 🎉 Helm Chart Generation Complete!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
