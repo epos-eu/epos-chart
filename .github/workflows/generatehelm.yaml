@@ -4,13 +4,13 @@ on:
   push:
     branches: [ main, develop ]
     paths:
-      - 'docker-compose.yml'
+      - 'docker-compose.yaml'
       - '.env'
-      - '.github/workflows/helm-chart.yml'
+      - '.github/workflows/generatehelm.yaml'
   pull_request:
     branches: [ main ]
     paths:
-      - 'docker-compose.yml'
+      - 'docker-compose.yaml'
       - '.env'
   workflow_dispatch:
     inputs:
