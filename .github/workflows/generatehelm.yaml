@@ -3,6 +3,9 @@ name: Generate Helm Chart
 on:
   push:
     branches: [ main, develop ]
+    tags:       # build on tag push
+      - 'v*'
+      - '*.*.*'
     paths:
       - 'docker-compose.yaml'
       - '.env'
@@ -13,149 +16,147 @@ on:
     paths:
       - 'docker-compose.yaml'
       - '.env'
+  release:       # also run when a Release is published from the UI/API
+    types: [published]
   workflow_dispatch:
     inputs:
       chart_version:
-        description: 'Helm chart version'
+        description: 'Helm chart version (leave as auto to infer)'
         required: false
         default: 'auto'
         type: string
 
+permissions:
+  contents: write   # required to create/update releases and upload assets
+
 env:
   HELM_CHART_NAME: epos-chart
-  ARTIFACT_NAME: epos-chart
 
 jobs:
   generate-helm-chart:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Extract branch name
-      shell: bash
-      run: echo "CHART_VERSION=0.0.0" >> $GITHUB_ENV
-      id: extract_branch
+      # Decide the chart version:
+      # - release event -> use release tag
+      # - tag push -> use tag name
+      # - manual dispatch with explicit value -> use that
+      # - else -> 0.0.0+<shortsha>
+      - name: Resolve chart version
+        id: version
+        shell: bash
+        run: |
+          CHART_VERSION=""
+          if [ "${{ github.event_name }}" = "release" ]; then
+            CHART_VERSION="${{ github.event.release.tag_name }}"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            CHART_VERSION="${GITHUB_REF_NAME}"
+          elif [ "${{ inputs.chart_version }}" != "" ] && [ "${{ inputs.chart_version }}" != "auto" ]; then
+            CHART_VERSION="${{ inputs.chart_version }}"
+          else
+            CHART_VERSION="0.0.0+${GITHUB_SHA:0:7}"
+          fi
+          # strip leading "v" if present
+          CHART_VERSION="${CHART_VERSION#v}"
+          echo "CHART_VERSION=${CHART_VERSION}" | tee -a $GITHUB_ENV
+          echo "version=${CHART_VERSION}" >> $GITHUB_OUTPUT
 
-    - name: Extract branch name for tag
-      shell: bash
-      if: startsWith(github.ref, 'refs/tags/')
-      run: echo "CHART_VERSION=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
-      id: extract_branch_tag
+      - name: Print Chart Version
+        run: |
+           echo "Chart version will be: ${{ env.CHART_VERSION }}"
 
-    - name: Print Chart Version
-      run: |    
-        echo "Chart version will be: ${{ env.CHART_VERSION }}"
+      - name: Install Katenary
+        run: |
+          sh <(curl -sSL https://repo.katenary.io/Katenary/katenary/raw/branch/master/install.sh)
+          katenary version
 
-    - name: Install Katenary
-      run: |
-        sh <(curl -sSL https://repo.katenary.io/Katenary/katenary/raw/branch/master/install.sh)
-        
-        # Verify installation
-        katenary version
+      - name: Validate Docker Compose file
+        run: |
+          if [ ! -f docker-compose.yaml ]; then
+            echo "Error: docker-compose.yaml not found"
+            exit 1
+          fi
+          docker compose config --quiet
 
-    - name: Validate Docker Compose file
-      run: |
-        # Check if docker-compose.yaml exists and is valid
-        if [ ! -f docker-compose.yaml ]; then
-          echo "Error: docker-compose.yaml not found"
-          exit 1
-        fi
-        
-        # Basic syntax validation
-        docker compose config --quiet
+      - name: Generate Helm Chart
+        run: |
+          chmod +x helmcreationscript.sh
+          ./helmcreationscript.sh
 
-    - name: Generate Helm Chart
-      run: |
-        chmod +x helmcreationscript.sh
+      - name: Install Helm & validate chart
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm lint "${{ env.HELM_CHART_NAME }}"
+          helm template test-release "${{ env.HELM_CHART_NAME }}" \
+            --set namespace=test-namespace \
+            --set ingressClass=nginx \
+            --dry-run > /dev/null
+          echo "✅ Helm chart validation successful"
 
-        ./helmcreationscript.sh
+      - name: Package Helm chart (versioned)
+        run: |
+          helm package "${{ env.HELM_CHART_NAME }}" --version "${{ env.CHART_VERSION }}"
 
-    - name: Validate Generated Helm Chart
-      run: |
-        # Install Helm
-        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-        
-        # Validate the generated chart
-        helm lint ${{ env.HELM_CHART_NAME }}
-        
-        # Test template rendering
-        helm template test-release ${{ env.HELM_CHART_NAME }} \
-          --set namespace=test-namespace \
-          --set ingressClass=nginx \
-          --dry-run > /dev/null
-        
-        echo "✅ Helm chart validation successful"
+      # ---- Action artifacts (always, handy for CI users) ----
+      - name: Upload packaged chart
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}
+          path: ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
+          retention-days: 30
+          compression-level: 6
 
-    - name: Create zip artifact
-      run: |
-        helm package ${{ env.HELM_CHART_NAME }}
+      - name: Upload values.yaml
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-chart-files-${{ env.CHART_VERSION }}
+          path: ${{ env.HELM_CHART_NAME }}/values.yaml
+          retention-days: 30
 
-    - name: Upload Helm Chart artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}
-        path: ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
-        retention-days: 30
-        compression-level: 6
+      # ---- Release assets (on tag push or published release) ----
+      # This will create (on tag) or update (on release) the GitHub Release and attach files.
+      - name: Attach assets to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
+          name: Helm Chart Release ${{ env.CHART_VERSION }}
+          body: |
+            ## Helm Chart Release
 
-    - name: Upload individual chart files
-      uses: actions/upload-artifact@v4
-      with:
-        name: helm-chart-files-${{ env.CHART_VERSION }}
-        path: |
-          ${{ env.HELM_CHART_NAME }}/values.yaml
-        retention-days: 30
+            **Chart:** `${{ env.HELM_CHART_NAME }}`  
+            **Version:** `${{ env.CHART_VERSION }}`  
+            **Commit:** `${{ github.sha }}`
 
-    - name: Create release on tag
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Helm Chart Release ${{ github.ref }}
-        body: |
-          ## Helm Chart Release
-          
-          This release contains the generated Helm chart for the EPOS system.
-          
-          ### Chart Details
-          - **Chart Version:** ${{ env.CHART_VERSION }}
-          - **Generated from:** ${{ github.sha }}
-          - **Generated on:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          
-          ### Installation
-          ```bash
-          # Download and extract the chart
-          wget ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref }}/${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
-          unzip ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
-          
-          # Install with Helm
-          helm install epos-system ./${{ env.HELM_CHART_NAME }}
-          ```
-          
-          ### Files included
-          - Helm chart templates
-          - values.yaml with all configuration options
-          - Example configuration files
-          - Installation scripts
-        draft: false
-        prerelease: false
+            ### Quick install
+            ```bash
+            # Download the packaged chart
+            gh release download ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }} -p '${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz'
+            # Install with Helm
+            helm install epos-system ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
+            ```
+          files: |
+            ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
+            ${{ env.HELM_CHART_NAME }}/values.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Summaryf
-      run: |
-        echo "## 🎉 Helm Chart Generation Complete!" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Generated Artifacts:" >> $GITHUB_STEP_SUMMARY
-        echo "- **Chart Name:** ${{ env.HELM_CHART_NAME }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Chart Version:** ${{ env.CHART_VERSION }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Artifact Name:** ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
-        echo "1. Download the artifact from the Actions tab" >> $GITHUB_STEP_SUMMARY
-        echo "2. Extract the zip file" >> $GITHUB_STEP_SUMMARY
-        echo "3. Review the generated Helm chart" >> $GITHUB_STEP_SUMMARY
-        echo "4. Deploy using: \`helm install epos-system ./${{ env.HELM_CHART_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+      - name: Summary
+        run: |
+          {
+            echo "## 🎉 Helm Chart Generation Complete!"
+            echo ""
+            echo "### Generated Artifacts:"
+            echo "- **Chart Name:** ${{ env.HELM_CHART_NAME }}"
+            echo "- **Chart Version:** ${{ env.CHART_VERSION }}"
+            echo "- **Artifact:** ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz"
+            echo "- **Commit:** ${{ github.sha }}"
+            echo ""
+            echo "### Next Steps:"
+            echo "1. Grab the artifact from the Actions run, or from the Release assets (on tag/release)."
+            echo "2. Review the chart and values."
+            echo "3. Deploy: \`helm install epos-system ./${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz\`"
+          } >> "$GITHUB_STEP_SUMMARY"
