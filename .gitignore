@@ -1,0 +1,4 @@
+./bin/
+epos-chart/*tgz
+*.tgz
+epos-chart

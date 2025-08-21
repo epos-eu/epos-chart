@@ -47,8 +47,6 @@ add_imagepullsecrets() {
 # Add imagePullSecrets to all deployment files
 echo "🔍 Searching for deployment files in $CHART_DIR/templates/..."
 
-ls
-
 if [ ! -d "$CHART_DIR/templates" ]; then
     echo "❌ Templates directory not found. Run katenary convert first."
     exit 1
