@@ -86,10 +86,10 @@ jobs:
         curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
         
         # Validate the generated chart
-        helm lint helm-output/${{ env.HELM_CHART_NAME }}
+        helm lint ${{ env.HELM_CHART_NAME }}
         
         # Test template rendering
-        helm template test-release helm-output/${{ env.HELM_CHART_NAME }} \
+        helm template test-release ${{ env.HELM_CHART_NAME }} \
           --set namespace=test-namespace \
           --set ingressClass=nginx \
           --dry-run > /dev/null
@@ -99,10 +99,10 @@ jobs:
     - name: Create deployment examples
       run: |
         # Create examples directory
-        mkdir -p helm-output/examples
+        mkdir -p examples
         
         # Create production values example
-        cat > helm-output/examples/values-production.yaml << EOF
+        cat > examples/values-production.yaml << EOF
         # Production values for EPOS Helm Chart
         namespace: epos-production
         ingressClass: nginx
@@ -134,7 +134,7 @@ jobs:
         EOF
         
         # Create development values example
-        cat > helm-output/examples/values-development.yaml << EOF
+        cat > examples/values-development.yaml << EOF
         # Development values for EPOS Helm Chart
         namespace: epos-dev
         ingressClass: nginx
@@ -161,7 +161,7 @@ jobs:
         EOF
         
         # Create installation script
-        cat > helm-output/examples/install.sh << 'EOF'
+        cat > examples/install.sh << 'EOF'
         #!/bin/bash
         set -e
         
@@ -186,7 +186,7 @@ jobs:
         echo "✅ EPOS system installed successfully!"
         EOF
         
-        chmod +x helm-output/examples/install.sh
+        chmod +x examples/install.sh
 
     - name: Create zip artifact
       run: |
@@ -236,8 +236,8 @@ jobs:
       with:
         name: helm-chart-files-${{ env.CHART_VERSION }}
         path: |
-          helm-output/${{ env.HELM_CHART_NAME }}/
-          helm-output/examples/
+          ${{ env.HELM_CHART_NAME }}/
+          examples/
         retention-days: 30
 
     - name: Create release on tag
