@@ -1,4 +1,4 @@
-# epos-chart
+# EPOS HELM CHART
 
 **EPOS Helm Chart for Kubernetes Deployment**
 
