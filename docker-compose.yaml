@@ -8,7 +8,7 @@ services:
       - epos_network
     restart: always
     environment:
-      - BASE_URL=${DEPLOY_PATH}
+      - BASE_URL=${DATAPORTAL_DEPLOY_PATH}
       - API_HOST=${GATEWAY_HOST}
     depends_on:
       gateway:
@@ -21,12 +21,16 @@ services:
         - BASE_URL
         - API_HOST
       katenary.v3/ingress: |-
+        enabled: true
+        host: "localhost"
         path: "${DATAPORTAL_DEPLOY_PATH}"
         pathType: Prefix
         port: 80
-        ingressClassName: "${INGRESS_CLASS}"
+        class: "${INGRESS_CLASS}"
         annotations:
           nginx.ingress.kubernetes.io/rewrite-target: "${DATAPORTAL_DEPLOY_PATH}"
+        tls:
+          enabled: false
 
   backofficeui:
     image: "${BACKOFFICE_UI_IMAGE}"
@@ -37,7 +41,7 @@ services:
       - epos_network
     restart: always
     environment:
-      - BASE_URL=${DEPLOY_PATH}
+      - BASE_URL=${BACKOFFICE_DEPLOY_PATH}
       - API_HOST=${GATEWAY_HOST}
     depends_on:
       gateway:
@@ -50,12 +54,16 @@ services:
         - BASE_URL
         - API_HOST
       katenary.v3/ingress: |-
+        enabled: true
+        host: "localhost"
         path: "${BACKOFFICE_DEPLOY_PATH}"
         pathType: Prefix
         port: 80
-        ingressClassName: "${INGRESS_CLASS}"
+        class: "${INGRESS_CLASS}"
         annotations:
           nginx.ingress.kubernetes.io/rewrite-target: "${BACKOFFICE_DEPLOY_PATH}"
+        tls:
+          enabled: false
 
   gateway:
     image: "${GATEWAY_IMAGE}"
@@ -117,12 +125,127 @@ services:
         - SECURITY_KEY
         - AAI_SERVICE_ENDPOINT
       katenary.v3/ingress: |-
+        enabled: true
+        host: "localhost"
         path: "${API_DEPLOY_PATH}"
         pathType: Prefix
-        port: 80
-        ingressClassName: "${INGRESS_CLASS}"
+        port: 5000
+        class: "${INGRESS_CLASS}"
         annotations:
           nginx.ingress.kubernetes.io/rewrite-target: "${API_DEPLOY_PATH}"
+        tls:
+          enabled: false
+
+  metadatapopulator:
+    image: "epos/metadata-cache:latest"
+    container_name: metadatapopulator
+    networks:
+      - epos_network
+    restart: "no"
+    environment:
+      - SECURITY_CODE=changeme
+      - MAX_PARALLEL=10
+    ports:
+      - "80:80"
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+
+        nginx
+        echo "[nginx] started"
+
+        echo "[wait] ingestorservice..."
+
+        until curl -fsS "http://{{ include "epos-chart.fullname"  . }}-ingestorservice:8080/api/ingestor-service/v1/actuator/health" >/dev/null 2>&1; do
+          sleep 2
+        done
+
+        echo "[init] Ontologies registration "
+        curl -fsS -X POST --header "accept: */*" \
+          'http://{{ include "epos-chart.fullname"  . }}-ingestorservice:8080/api/ingestor-service/v1/ontology?path=https://raw.githubusercontent.com/epos-eu/EPOS-DCAT-AP/EPOS-DCAT-AP-shapes/epos-dcat-ap_shapes.ttl&securityCode={{ .Values.metadatapopulator.environment.SECURITY_CODE }}&name=EPOS-DCAT-AP-V1&type=BASE'
+
+        curl -fsS -X POST --header "accept: */*" \
+          'http://{{ include "epos-chart.fullname"  . }}-ingestorservice:8080/api/ingestor-service/v1/ontology?path=https://raw.githubusercontent.com/epos-eu/EPOS-DCAT-AP/EPOS-DCAT-AP-v3.0/docs/epos-dcat-ap_v3.0.0_shacl.ttl&securityCode={{ .Values.metadatapopulator.environment.SECURITY_CODE }}&name=EPOS-DCAT-AP-V3&type=BASE'
+
+        curl -fsS -X POST --header "accept: */*" \
+          'http://{{ include "epos-chart.fullname"  . }}-ingestorservice:8080/api/ingestor-service/v1/ontology?path=https://raw.githubusercontent.com/epos-eu/EPOS_Data_Model_Mapping/main/edm-schema-shapes.ttl&securityCode={{ .Values.metadatapopulator.environment.SECURITY_CODE }}&name=EDM-TO-DCAT-AP&type=MAPPING'
+
+        echo "[sleep] 10s..."
+        sleep 10
+
+        SECONDS=0
+
+        echo "[fetch] Download index: 'http://{{ include "epos-chart.fullname"  . }}-metadatapopulator/index.txt'"
+        files="$$(curl -fsS 'http://{{ include "epos-chart.fullname"  . }}-metadatapopulator/index.txt' | tr -d '\r' | sed '/^[[:space:]]*$$/d')"
+
+        get_group_name() {
+          case "$$1" in
+            *tcs-geomag*) echo 'Geomagnetic%20Observations' ;;
+            *tcs-gnss*)   echo 'GNSS%20Data%20and%20Products' ;;
+            *tcs-vo*)     echo 'Volcano%20Observations' ;;
+            *tcs-gim*)    echo 'Geological%20Information%20and%20Modeling' ;;
+            *tcs-seismo*) echo 'Seismology' ;;
+            *tcs-msl*)    echo 'Multi-scale%20Laboratories' ;;
+            *tcs-tsu*)    echo 'Tsunami' ;;
+            *tcs-satd*)   echo 'Satellite%20Data' ;;
+            *tcs-nfo*)    echo 'Near%20Fault%20Observatories' ;;
+            *tcs-ah*)     echo 'Anthropogenic%20Hazards' ;;
+            *)            echo 'ALL' >&2; echo 'ALL' ;;
+          esac
+        }
+
+        max="$${MAX_PARALLEL:-10}"
+        count=0
+        echo "[start] parallel ingest (MAX_PARALLEL=$$max)"
+
+        for i in $${files}; do
+          filename="$${i##*/}"
+          groupname="$$(get_group_name "$$i")"
+          echo "  -> $$i  (group=$$groupname)"
+          (
+            curl -fsS -X POST --header "accept: */*" \
+              "http://{{ include "epos-chart.fullname"  . }}-ingestorservice:8080/api/ingestor-service/v1/populate?path=http://{{ include "epos-chart.fullname"  . }}-metadatapopulator/$$filename&securityCode={{ .Values.metadatapopulator.environment.SECURITY_CODE }}&model=EPOS-DCAT-AP-V1&mapping=EDM-TO-DCAT-AP&type=single&metadataGroup=$$groupname"
+            echo "     [ok] $$i"
+          ) &
+          count=$$((count + 1))
+          if [ $$((count % max)) -eq 0 ]; then
+            wait
+          fi
+        done
+
+        wait
+        duration=$$SECONDS
+        echo "[done] Total ingestion time: $$((duration/60))m $$((duration%60))s"
+    depends_on:
+      gateway:
+        condition: service_healthy
+      resourcesservice:
+        condition: service_healthy
+      backofficeservice:
+        condition: service_healthy
+      ingestorservice:
+        condition: service_healthy
+      externalaccessservice:
+        condition: service_healthy
+      converterservice:
+        condition: service_healthy
+      converterroutine:
+        condition: service_healthy
+      sharingservice:
+        condition: service_healthy
+      emailsenderservice:
+        condition: service_healthy
+      dataportal:
+        condition: service_healthy
+      backofficeui:
+        condition: service_healthy
+    labels:
+      katenary.v3/values: |-
+        - SECURITY_CODE
+        - INDEX_URL
+        - MAX_PARALLEL
 
   rabbitmq:
     image: "${RABBITMQ_IMAGE}"
