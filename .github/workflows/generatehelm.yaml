@@ -64,9 +64,9 @@ jobs:
 
     - name: Validate Docker Compose file
       run: |
-        # Check if docker-compose.yml exists and is valid
-        if [ ! -f docker-compose.yml ]; then
-          echo "Error: docker-compose.yml not found"
+        # Check if docker-compose.yaml exists and is valid
+        if [ ! -f docker-compose.yaml ]; then
+          echo "Error: docker-compose.yaml not found"
           exit 1
         fi
         
