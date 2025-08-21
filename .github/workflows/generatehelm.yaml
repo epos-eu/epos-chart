@@ -6,6 +6,7 @@ on:
     paths:
       - 'docker-compose.yaml'
       - '.env'
+      - 'helmcreationscript.sh'
       - '.github/workflows/generatehelm.yaml'
   pull_request:
     branches: [ main ]
