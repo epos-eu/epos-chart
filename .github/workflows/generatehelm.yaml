@@ -80,48 +80,6 @@ jobs:
 
         ./helmcreationscript.sh
 
-    - name: Customize Helm Chart
-      run: |
-        # Update Chart.yaml with additional metadata
-        cat >> helm-output/${{ env.HELM_CHART_NAME }}/Chart.yaml << EOF
-        description: EPOS (European Plate Observing System) - Microservices deployment
-        keywords:
-          - epos
-          - microservices
-          - data-portal
-          - geoscience
-        home: https://github.com/${{ github.repository }}
-        sources:
-          - https://github.com/${{ github.repository }}
-        maintainers:
-          - name: ${{ github.actor }}
-            email: ${{ github.actor }}@users.noreply.github.com
-        EOF
-        
-        # Add a README to the chart
-        cat > helm-output/${{ env.HELM_CHART_NAME }}/README.md << EOF
-        # ${{ env.HELM_CHART_NAME }}
-        
-        This Helm chart deploys the EPOS system microservices.
-        
-        ## Installation
-        
-        \`\`\`bash
-        helm install epos-system ./ \\
-          --set namespace=your-namespace \\
-          --set ingressClass=nginx \\
-          --set dataportalDeployPath=/portal \\
-          --set apiDeployPath=/api \\
-          --set backofficeDeployPath=/backoffice
-        \`\`\`
-        
-        ## Generated from
-        - Repository: ${{ github.repository }}
-        - Commit: ${{ github.sha }}
-        - Workflow: ${{ github.workflow }}
-        - Generated on: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-        EOF
-
     - name: Validate Generated Helm Chart
       run: |
         # Install Helm
