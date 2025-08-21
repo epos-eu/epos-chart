@@ -23,7 +23,7 @@ on:
 
 env:
   HELM_CHART_NAME: epos-chart
-  ARTIFACT_NAME: epos-helm-chart
+  ARTIFACT_NAME: epos-chart
 
 jobs:
   generate-helm-chart:
@@ -33,27 +33,13 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up environment variables
-      run: |
-        # Copy example env file if .env doesn't exist
-        if [ ! -f .env ]; then
-          cp .env.example .env
-        fi
-        
-        # Set default values for chart generation
-        echo "NAMESPACE=epos-system" >> .env
-        echo "INGRESS_CLASS=nginx" >> .env
-        echo "DATAPORTAL_DEPLOY_PATH=/portal" >> .env
-        echo "API_DEPLOY_PATH=/api" >> .env
-        echo "BACKOFFICE_DEPLOY_PATH=/backoffice" >> .env
-        
-        # Set chart version
-        if [ "${{ github.event.inputs.chart_version }}" = "auto" ] || [ -z "${{ github.event.inputs.chart_version }}" ]; then
-          CHART_VERSION="1.0.0-${GITHUB_SHA:0:7}"
-        else
-          CHART_VERSION="${{ github.event.inputs.chart_version }}"
-        fi
-        echo "CHART_VERSION=${CHART_VERSION}" >> $GITHUB_ENV
+    - name: Extract branch name
+      shell: bash
+      run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $CHART_VERSION
+      id: extract_branch
+
+    - name: Print Chart Version
+      run: |    
         echo "Chart version will be: ${CHART_VERSION}"
 
     - name: Install Katenary
@@ -96,136 +82,15 @@ jobs:
         
         echo "✅ Helm chart validation successful"
 
-    - name: Create deployment examples
-      run: |
-        # Create examples directory
-        mkdir -p examples
-        
-        # Create production values example
-        cat > examples/values-production.yaml << EOF
-        # Production values for EPOS Helm Chart
-        namespace: epos-production
-        ingressClass: nginx
-        
-        # Deployment paths
-        dataportalDeployPath: /portal
-        apiDeployPath: /api
-        backofficeDeployPath: /backoffice
-        
-        # Database configuration
-        postgresUser: epos_user
-        postgresDb: epos_metadata
-        
-        # RabbitMQ configuration
-        rabbitmqUsername: epos_user
-        rabbitmqVhost: epos
-        
-        # Environment type
-        environmentType: production
-        
-        # Resource limits (example)
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 1Gi
-          requests:
-            cpu: 500m
-            memory: 512Mi
-        EOF
-        
-        # Create development values example
-        cat > examples/values-development.yaml << EOF
-        # Development values for EPOS Helm Chart
-        namespace: epos-dev
-        ingressClass: nginx
-        
-        # Deployment paths
-        dataportalDeployPath: /portal
-        apiDeployPath: /api
-        backofficeDeployPath: /backoffice
-        
-        # Database configuration
-        postgresUser: postgres
-        postgresDb: epos_dev
-        
-        # RabbitMQ configuration
-        rabbitmqUsername: guest
-        rabbitmqVhost: /
-        
-        # Environment type
-        environmentType: development
-        
-        # Development specific settings
-        monitoring: false
-        logLevel: DEBUG
-        EOF
-        
-        # Create installation script
-        cat > examples/install.sh << 'EOF'
-        #!/bin/bash
-        set -e
-        
-        NAMESPACE=${1:-epos-system}
-        VALUES_FILE=${2:-values-production.yaml}
-        RELEASE_NAME=${3:-epos-system}
-        
-        echo "Installing EPOS Helm Chart..."
-        echo "Namespace: $NAMESPACE"
-        echo "Values file: $VALUES_FILE"
-        echo "Release name: $RELEASE_NAME"
-        
-        # Create namespace if it doesn't exist
-        kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-        
-        # Install the chart
-        helm upgrade --install $RELEASE_NAME ./ \
-          --namespace $NAMESPACE \
-          --values examples/$VALUES_FILE \
-          --wait
-        
-        echo "✅ EPOS system installed successfully!"
-        EOF
-        
-        chmod +x examples/install.sh
-
     - name: Create zip artifact
       run: |
-        # Create timestamp for artifact naming
-        TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
-        ARTIFACT_ZIP="${{ env.ARTIFACT_NAME }}-${CHART_VERSION}-${TIMESTAMP}.zip"
-        
-        # Create the zip file
-        zip -r "../${ARTIFACT_ZIP}" ${{ env.HELM_CHART_NAME }}/ examples/
-        
-        # Create metadata file
-        cat > chart-metadata.json << EOF
-        {
-          "chart_name": "${{ env.HELM_CHART_NAME }}",
-          "chart_version": "${{ env.CHART_VERSION }}",
-          "generated_at": "$(date -u -Iseconds)",
-          "repository": "${{ github.repository }}",
-          "commit_sha": "${{ github.sha }}",
-          "commit_ref": "${{ github.ref }}",
-          "workflow_run_id": "${{ github.run_id }}",
-          "actor": "${{ github.actor }}",
-          "artifact_name": "${ARTIFACT_ZIP}"
-        }
-        EOF
-        
-        # Add metadata to zip
-        zip -u "${ARTIFACT_ZIP}" chart-metadata.json
-        
-        echo "ARTIFACT_ZIP=${ARTIFACT_ZIP}" >> $GITHUB_ENV
-        
-        # Show zip contents
-        echo "📦 Zip file contents:"
-        unzip -l "${ARTIFACT_ZIP}"
+        helm package ${{ env.HELM_CHART_NAME }}
 
     - name: Upload Helm Chart artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.ARTIFACT_NAME }}-${{ env.CHART_VERSION }}
-        path: ${{ env.ARTIFACT_ZIP }}
+        name: ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}
+        path: ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
         retention-days: 30
         compression-level: 6
 
@@ -234,8 +99,7 @@ jobs:
       with:
         name: helm-chart-files-${{ env.CHART_VERSION }}
         path: |
-          ${{ env.HELM_CHART_NAME }}/
-          examples/
+          ${{ env.HELM_CHART_NAME }}/values.yaml
         retention-days: 30
 
     - name: Create release on tag
@@ -259,8 +123,8 @@ jobs:
           ### Installation
           ```bash
           # Download and extract the chart
-          wget ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref }}/${{ env.ARTIFACT_ZIP }}
-          unzip ${{ env.ARTIFACT_ZIP }}
+          wget ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref }}/${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
+          unzip ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz
           
           # Install with Helm
           helm install epos-system ./${{ env.HELM_CHART_NAME }}
@@ -281,7 +145,7 @@ jobs:
         echo "### Generated Artifacts:" >> $GITHUB_STEP_SUMMARY
         echo "- **Chart Name:** ${{ env.HELM_CHART_NAME }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Chart Version:** ${{ env.CHART_VERSION }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Artifact Name:** ${{ env.ARTIFACT_ZIP }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Artifact Name:** ${{ env.HELM_CHART_NAME }}-${{ env.CHART_VERSION }}.tgz" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY

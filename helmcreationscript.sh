@@ -4,8 +4,9 @@
 
 CHART_DIR="./epos-chart"
 SECRET_NAME="${1:-epos-registry-secret}"
+VERSION=${CHART_VERSION:-0.0.1}
 
-katenary convert -c docker-compose.yml -o ./epos-chart 
+katenary convert -c docker-compose.yml --app-version $VERSION --chart-version $VERSION -o ./epos-chart 
 
 echo "🔑 Adding imagePullSecrets to EPOS deployments..."
 echo "Chart directory: $CHART_DIR"
