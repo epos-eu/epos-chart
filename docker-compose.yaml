@@ -218,6 +218,8 @@ services:
         wait
         duration=$$SECONDS
         echo "[done] Total ingestion time: $$((duration/60))m $$((duration%60))s"
+
+        sleep infinity
     depends_on:
       gateway:
         condition: service_healthy
