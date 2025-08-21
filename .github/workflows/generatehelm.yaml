@@ -35,12 +35,12 @@ jobs:
 
     - name: Extract branch name
       shell: bash
-      run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> CHART_VERSION
+      run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> env.CHART_VERSION
       id: extract_branch
 
     - name: Print Chart Version
       run: |    
-        echo "Chart version will be: ${CHART_VERSION}"
+        echo "Chart version will be: ${{ env.CHART_VERSION }}"
 
     - name: Install Katenary
       run: |
