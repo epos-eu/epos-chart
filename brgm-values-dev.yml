@@ -5,7 +5,7 @@ global:
     registry:
       server: "epos-ci.brgm.fr:5005"
       username: "valerio.vinciarelli@epos-eric.eu"
-      password: "glpat-ZtABLpzzdw3M2ZNPeVTD"
+      password: ""
       email: "valerio.vinciarelli@epos-eric.eu"
 
 backofficeservice:
