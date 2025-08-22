@@ -85,12 +85,12 @@ services:
       - IS_AAI_ENABLED=${IS_AAI_ENABLED}
       - SECURITY_KEY=${SECURITY_KEY}
       - AAI_SERVICE_ENDPOINT=${AAI_SERVICE_ENDPOINT}
-    healthcheck:
-      test: python3 -c 'import urllib.request; resp=urllib.request.urlopen("http://localhost:5000/api/v1/ui", timeout=5); print(f"Status {resp.getcode()}"); exit(0 if resp.getcode() == 200 else 1)' || exit 1
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    #healthcheck:
+    #  test: python3 -c 'import urllib.request; resp=urllib.request.urlopen("http://localhost:5000/api/v1/ui", timeout=5); print(f"Status {resp.getcode()}"); exit(0 if resp.getcode() == 200 else 1)' || exit 1
+    #  interval: 30s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 10s
     depends_on:
       resourcesservice:
         condition: service_healthy
@@ -109,6 +109,25 @@ services:
       emailsenderservice:
         condition: service_healthy
     labels:
+      katenary.v3/health-check: |-
+        readinessProbe:
+          httpGet:
+            path: /api/v1/ui/
+            port: 5000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/v1/ui/
+            port: 5000
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       katenary.v3/deployment: |-
         imagePullPolicy: Always
       katenary.v3/description: "EPOS API Gateway - Central API gateway for all services"
@@ -273,12 +292,25 @@ services:
       katenary.v3/ports: |-
         - 5672
       katenary.v3/health-check: |-
+        readinessProbe:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - rabbitmq-diagnostics check_running && rabbitmq-diagnostics check_local_alarms
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         livenessProbe:
           exec:
-            command: ["/opt/rabbitmq/sbin/rabbitmq-diagnostics", "-q", "ping"]
+            command:
+              - rabbitmq-diagnostics
+              - ping
           initialDelaySeconds: 60
-          periodSeconds: 10
-          failureThreshold: 6
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
 
   resourcesservice:
     image: "${RESOURCES_SERVICE_IMAGE}"
@@ -309,18 +341,37 @@ services:
       - CONNECTION_POOL_INIT_SIZE=${CONNECTION_POOL_INIT_SIZE}
       - CONNECTION_POOL_MIN_SIZE=${CONNECTION_POOL_MIN_SIZE}
       - CONNECTION_POOL_MAX_SIZE=${CONNECTION_POOL_MAX_SIZE}
-    healthcheck:
-      test: "curl --fail --silent http://localhost:8080/api/resources-service/v1/actuator/health | grep UP || exit 1"
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+    #healthcheck:
+    #  test: "curl --fail --silent http://localhost:8080/api/resources-service/v1/actuator/health | grep UP || exit 1"
+    #  interval: 30s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 30s
     depends_on:
       rabbitmq:
         condition: service_healthy
       metadatadatabase:
         condition: service_healthy
     labels:
+      katenary.v3/health-check: |-
+        readinessProbe:
+          httpGet:
+            path: /api/resources-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/resources-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       katenary.v3/deployment: |-
         imagePullPolicy: Always
       katenary.v3/description: "EPOS Resources Service"
@@ -367,16 +418,35 @@ services:
       - CONNECTION_POOL_MIN_SIZE=${CONNECTION_POOL_MIN_SIZE}
       - CONNECTION_POOL_MAX_SIZE=${CONNECTION_POOL_MAX_SIZE}
       - PERSISTENCE_NAME=${PERSISTENCE_NAME}
-    healthcheck:
-      test: "curl --fail --silent http://localhost:8080/api/backoffice-service/v1/actuator/health | grep UP || exit 1"
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    #healthcheck:
+    #  test: "curl --fail --silent http://localhost:8080/api/backoffice-service/v1/actuator/health | grep UP || exit 1"
+    #  interval: 30s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 10s
     depends_on:
       metadatadatabase:
         condition: service_healthy
     labels:
+      katenary.v3/health-check: |-
+        readinessProbe:
+          httpGet:
+            path: /api/backoffice-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/backoffice-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       katenary.v3/deployment: |-
         imagePullPolicy: Always
       katenary.v3/description: "EPOS Backoffice Service"
@@ -412,16 +482,35 @@ services:
       - CONNECTION_POOL_INIT_SIZE=${CONNECTION_POOL_INIT_SIZE}
       - CONNECTION_POOL_MIN_SIZE=${CONNECTION_POOL_MIN_SIZE}
       - CONNECTION_POOL_MAX_SIZE=${CONNECTION_POOL_MAX_SIZE}
-    healthcheck:
-      test: "curl --fail --silent http://localhost:8080/api/ingestor-service/v1/actuator/health | grep UP || exit 1"
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    #healthcheck:
+    #  test: "curl --fail --silent http://localhost:8080/api/ingestor-service/v1/actuator/health | grep UP || exit 1"
+    #  interval: 30s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 10s
     depends_on:
       metadatadatabase:
         condition: service_healthy
     labels:
+      katenary.v3/health-check: |-
+        readinessProbe:
+          httpGet:
+            path: /api/ingestor-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/ingestor-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       katenary.v3/deployment: |-
         imagePullPolicy: Always
       katenary.v3/description: "EPOS Ingestor Service"
@@ -460,18 +549,37 @@ services:
       - CONNECTION_POOL_INIT_SIZE=${CONNECTION_POOL_INIT_SIZE}
       - CONNECTION_POOL_MIN_SIZE=${CONNECTION_POOL_MIN_SIZE}
       - CONNECTION_POOL_MAX_SIZE=${CONNECTION_POOL_MAX_SIZE}
-    healthcheck:
-      test: "curl --fail --silent http://localhost:8080/api/external-access-service/v1/actuator/health | grep UP || exit 1"
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
+    #healthcheck:
+    #  test: "curl --fail --silent http://localhost:8080/api/external-access-service/v1/actuator/health | grep UP || exit 1"
+    #  interval: 30s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 15s
     depends_on:
       metadatadatabase:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     labels:
+      katenary.v3/health-check: |-
+        readinessProbe:
+          httpGet:
+            path: /api/external-access-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/external-access-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       katenary.v3/deployment: |-
         imagePullPolicy: Always
       katenary.v3/description: "EPOS External Access Service"
@@ -517,13 +625,32 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    healthcheck:
-      test: "wget --quiet --tries=1 -O - http://localhost:8080/api/converter-service/v1/actuator/health | grep -i 'healthy' || exit 1"
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
+    #healthcheck:
+    #  test: "wget --quiet --tries=1 -O - http://localhost:8080/api/converter-service/v1/actuator/health | grep -i 'healthy' || exit 1"
+    #  interval: 30s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 5s
     labels:
+      katenary.v3/health-check: |-
+        readinessProbe:
+          httpGet:
+            path: /api/converter-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/converter-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       katenary.v3/deployment: |-
         imagePullPolicy: Always
       katenary.v3/description: "EPOS Converter Service"
@@ -563,13 +690,32 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    healthcheck:
-      test: "wget --quiet --tries=1 -O - http://localhost:8080/api/converter-routine/v1/actuator/health | grep -i 'healthy' || exit 1"
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
+    #healthcheck:
+    #  test: "wget --quiet --tries=1 -O - http://localhost:8080/api/converter-routine/v1/actuator/health | grep -i 'healthy' || exit 1"
+    #  interval: 30s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 5s
     labels:
+      katenary.v3/health-check: |-
+        readinessProbe:
+          httpGet:
+            path: /api/converter-routine/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/converter-routine/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       katenary.v3/deployment: |-
         imagePullPolicy: Always
       katenary.v3/ports: |-
@@ -612,16 +758,35 @@ services:
       - MAIL_API_URL=${MAIL_API_URL}
       - MAIL_API_KEY=${MAIL_API_KEY}
       - PERSISTENCE_NAME=${PERSISTENCE_NAME}
-    healthcheck:
-      test: "curl --fail --silent http://localhost:8080/api/email-sender-service/v1/actuator/health | grep UP || exit 1"
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    #healthcheck:
+    #  test: "curl --fail --silent http://localhost:8080/api/email-sender-service/v1/actuator/health | grep UP || exit 1"
+    #  interval: 30s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 10s
     depends_on:
       metadatadatabase:
         condition: service_healthy
     labels:
+      katenary.v3/health-check: |-
+        readinessProbe:
+          httpGet:
+            path: /api/email-sender-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/email-sender-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       katenary.v3/deployment: |-
         imagePullPolicy: Always
       katenary.v3/ports: |-
@@ -664,16 +829,35 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRESQL_CONNECTION_STRING=${POSTGRESQL_CONNECTION_STRING}
       - PERSISTENCE_NAME_SHARING=${PERSISTENCE_NAME_SHARING}
-    healthcheck:
-      test: "curl --fail --silent http://localhost:8080/api/sharing-service/v1/actuator/health | grep UP || exit 1"
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    #healthcheck:
+    #  test: "curl --fail --silent http://localhost:8080/api/sharing-service/v1/actuator/health | grep UP || exit 1"
+    #  interval: 30s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 10s
     depends_on:
       metadatadatabase:
         condition: service_healthy
     labels:
+      katenary.v3/health-check: |-
+        readinessProbe:
+          httpGet:
+            path: /api/sharing-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/sharing-service/v1/actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       katenary.v3/deployment: |-
         imagePullPolicy: Always
       katenary.v3/ports: |-
@@ -698,15 +882,36 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - psqldata:/var/lib/postgresql
-    healthcheck:
-      test: "pg_isready -U postgres"
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    #healthcheck:
+    #  test: "pg_isready -U postgres"
+    #  interval: 30s
+    #  timeout: 5s
+    #  retries: 5
+    #  start_period: 10s
     networks:
       - epos_network
     labels:
+      katenary.v3/health-check: |-
+        readinessProbe:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h localhost
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h localhost
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
       katenary.v3/deployment: |-
         imagePullPolicy: Always
       katenary.v3/description: "PostgreSQL Metadata Catalogue Database"
