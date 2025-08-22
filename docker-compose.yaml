@@ -218,6 +218,8 @@ services:
         wait
         duration=$$SECONDS
         echo "[done] Total ingestion time: $$((duration/60))m $$((duration%60))s"
+        echo "Entering sleep mode..."
+        sleep infinity
     depends_on:
       gateway:
         condition: service_healthy
@@ -244,7 +246,6 @@ services:
     labels:
       katenary.v3/values: |-
         - SECURITY_CODE
-        - INDEX_URL
         - MAX_PARALLEL
 
   rabbitmq:
