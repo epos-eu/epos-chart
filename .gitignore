@@ -3,3 +3,4 @@ epos-chart/*tgz
 *.tgz
 epos-chart
 testing-values.yml
+brgm-values-dev.yml
