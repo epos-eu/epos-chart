@@ -1,0 +1,128 @@
+# global-template.yaml
+# Global configuration template for EPOS Helm Chart
+# This file will be read by the add-imagepullsecrets.sh script
+# to populate the global section in the chart's values.yaml
+
+global:
+  services:
+    hosts:
+      host: localhost
+      dataportal: /dataportal/
+      backoffice: /backoffice/
+      gateway: /api/v1/
+      api_host: 'http://{{ include "epos-chart.fullname"  . }}-gateway:5000/api'
+
+    database:
+      username: postgres
+      password: changeme
+      dbname: cerif
+      host: '{{ include "epos-chart.fullname"  . }}-metadatadatabase'
+      port: 5432
+      connection_string: 'jdbc:postgresql://{{ tpl .Values.global.services.database.host . }}:{{ .Values.global.services.database.port }}/{{ .Values.global.services.database.dbname }}?user={{ .Values.global.services.database.username }}&password={{ .Values.global.services.database.password }}'
+      persistence_metadata: EPOSDataModel
+      persistence_sharing: EPOSSharing
+
+    rabbitmq:
+      username: rabbitmq-user
+      password: changeme
+      vhost: changeme
+      host: '{{ include "epos-chart.fullname"  . }}-rabbitmq'
+
+  # Docker registry configuration for private images
+  imagePullSecrets:
+    # Enable/disable docker-registry secret creation
+    enabled: true
+    
+    # Name of the secret to create and reference
+    secretName: "epos-registry-secret"
+    
+    # Registry credentials
+    registry:
+      # Registry server URL - uncomment and configure the one you need:
+      
+      # Docker Hub
+      # server: "https://index.docker.io/v1/"
+      
+      # GitHub Container Registry
+      # server: "ghcr.io"
+      
+      # GitLab Container Registry
+      # server: "registry.gitlab.com"
+      
+      # Azure Container Registry
+      # server: "youracr.azurecr.io"
+      
+      # AWS ECR (replace region and account)
+      # server: "123456789012.dkr.ecr.us-west-2.amazonaws.com"
+      
+      # Google Container Registry
+      # server: "gcr.io"
+      
+      # Custom private registry
+      # server: "your-registry.example.com"
+      
+      server: ""
+      
+      # Registry authentication
+      username: ""   # Registry username or service account
+      password: ""   # Registry password, token, or service account key
+      email: ""      # Registry email (required for some registries)
+
+  # Global node selector (optional)
+  # Apply to all pods unless overridden
+  nodeSelector: {}
+  # Example:
+  # nodeSelector:
+  #   kubernetes.io/os: linux
+  #   node-type: standard
+
+  # Global tolerations (optional)  
+  # Apply to all pods unless overridden
+  tolerations: []
+  # Example:
+  # tolerations:
+  #   - key: "dedicated"
+  #     operator: "Equal"
+  #     value: "epos"
+  #     effect: "NoSchedule"
+
+  # Global affinity rules (optional)
+  # Apply to all pods unless overridden  
+  affinity: {}
+  # Example:
+  # affinity:
+  #   podAntiAffinity:
+  #     preferredDuringSchedulingIgnoredDuringExecution:
+  #     - weight: 100
+  #       podAffinityTerm:
+  #         labelSelector:
+  #           matchExpressions:
+  #           - key: app.kubernetes.io/name
+  #             operator: In
+  #             values:
+  #             - epos-chart
+  #         topologyKey: kubernetes.io/hostname
+
+  # Global security context (optional)
+  securityContext: {}
+  # Example:
+  # securityContext:
+  #   runAsNonRoot: true
+  #   runAsUser: 1000
+  #   runAsGroup: 1000
+  #   fsGroup: 1000
+
+  # Global resource limits (optional)
+  # Can be overridden by individual services
+  resources: {}
+  # Example:
+  # resources:
+  #   limits:
+  #     memory: "512Mi"
+  #     cpu: "500m"
+  #   requests:
+  #     memory: "256Mi" 
+  #     cpu: "250m"
+
+# Environment-specific overrides can be added here or in separate files
+# For example: development, staging, production configurations
