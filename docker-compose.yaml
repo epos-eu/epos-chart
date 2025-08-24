@@ -87,6 +87,7 @@ services:
       - IS_AAI_ENABLED=${IS_AAI_ENABLED}
       - SECURITY_KEY=${SECURITY_KEY}
       - AAI_SERVICE_ENDPOINT=${AAI_SERVICE_ENDPOINT}
+      - SPLITTER=-
     #healthcheck:
     #  test: python3 -c 'import urllib.request; resp=urllib.request.urlopen("http://localhost:5000/api/v1/ui", timeout=5); print(f"Status {resp.getcode()}"); exit(0 if resp.getcode() == 200 else 1)' || exit 1
     #  interval: 30s
@@ -145,6 +146,7 @@ services:
         - IS_AAI_ENABLED
         - SECURITY_KEY
         - AAI_SERVICE_ENDPOINT
+        - SPLITTER
       katenary.v3/ingress: |-
         enabled: true
         hostname: '{{ tpl .Values.global.services.hosts.host . }}'
@@ -240,6 +242,8 @@ services:
         duration=$$SECONDS
         echo "[done] Total ingestion time: $$((duration/60))m $$((duration%60))s"
 
+        curl -fsS -X POST --header "accept: application/json" "http://{{ include "epos-chart.fullname"  . }}-resourcesservice:8080/api/resources-service/v1/invalidate
+
         $$COMPLETED=true
 
         echo "Entering sleep mode..."
@@ -268,6 +272,7 @@ services:
       backofficeui:
         condition: service_healthy
     labels:
+      katenary.v3/ignore: true
       katenary.v3/values: |-
         - SECURITY_CODE
         - MAX_PARALLEL
