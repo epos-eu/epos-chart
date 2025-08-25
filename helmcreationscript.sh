@@ -239,6 +239,929 @@ EOF
     
     # Job 2: pluginpopulator.yaml (post-install hook, weight 1)
     cat > "$templates_dir/pluginpopulator-job.yaml" << 'EOF'
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: populate
+data:
+  # file-like keys
+  populate.json: |
+    [
+      {
+        "version": "main",
+        "name": "ah-episodes-elements-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/ah-episodes-elements-plugin.git",
+        "runtime": "java",
+        "executable": "target/WP14_Episode_elements-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.ahepisodes.core.AHEpisodesInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/CZORSZTYN"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/GS"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/LGCD"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/SONG_TRANH"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/USCB"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/BOBREK"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/PYHASALMI_MINE"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/LGF"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/MONTEYNARD"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/SSFS1993"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/SSFS2000"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/SSFS2003"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/SSFS2004"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/SSFS2005"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/GISOS-CERVILLE"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/STARFISH"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/THE_GEYSERS_Prati_9_and_Prati_29_cluster"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/THE_GEYSERS"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/VDF"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/VD"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/PREESE_HALL"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/THORESBY_COLLIERY"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/ASFORDBY"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/NORTHWICH"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/OK"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/PREESALL_MINE"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/GRONINGEN_FIELD"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/LUBOCINO"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/WYSIN"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/SG"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/VOUGLANS"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/GAZLI"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/COTTON_VALLEY"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/COOPER_BASIN"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/BOGDANKA"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/LAI_CHAU"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/EMILIA_ROMAGNA"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/KWK_Piast_Ziemowit"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/KWK_Ruda_Bielszowice"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/MUSE1_Regional_Polygon"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/KWK_ROW_Rydultowy"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/ASPO"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/JAGUARS"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/AE_LAB-EXPERIMENT"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episode-elements/STIMTEC"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "nfo-vpvs-covjson-go",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/nfo-vpvs-covjson-go.git",
+        "runtime": "binary",
+        "executable": "binary",
+        "arguments": "",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.covjson",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/VPVS/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/KOERI/VPVS/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/irpinia/vpvs/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/NIEP/VPVS/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/CRL/VPVS/WebService/001/Operation/001"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "satd-linked-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/satd-linked-plugin.git",
+        "runtime": "binary",
+        "executable": "binary",
+        "arguments": "",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "https://catalog.terradue.com/gep-epos/SatelliteObservations/WebService/WRAPPED_INTERFEROGRAM/Operation/Search"
+          },
+          {
+            "relationId": "https://catalog.terradue.com/gep-epos/SatelliteObservations/WebService/UNWRAPPED_INTERFEROGRAM/Operation/Search"
+          },
+          {
+            "relationId": "https://catalog.terradue.com/gep-epos/SatelliteObservations/WebService/SPATIAL_COHERENCE/Operation/Search"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "satd-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/satd-plugin.git",
+        "runtime": "java",
+        "executable": "target/SATDPlugin-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.satellite.core.SATDInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "https://catalog.terradue.com/gep-epos/SatelliteObservations/WebService/LOS_DISPLACEMENT_TIMESERIES/Operation/Search"
+          },
+          {
+            "relationId": "https://catalog.terradue.com/gep-epos/SatelliteObservations/WebService/MAP_OF_LOS_VECTOR/Operation/Search"
+          },
+          {
+            "relationId": "https://catalog.terradue.com/gep-epos/SatelliteObservations/WebService/INTERFEROGRAM_APS_GLOBAL_MODEL/Operation/Search"
+          },
+          {
+            "relationId": "https://catalog.terradue.com/gep-epos/SatelliteObservations/WebService/DEM_RADAR_GEOMETRY/Operation/Search"
+          },
+          {
+            "relationId": "https://catalog.terradue.com/gep-epos/SatelliteObservations/WebService/LOOKUP_TABLE_RADAR2GROUND_COORDINATES/Operation/Search"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "nfo-co2-covjson",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/nfo-co2-covjson.git",
+        "runtime": "java",
+        "executable": "target/covjson-co2-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.nfo.co2.NFOCO2Invoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.covjson",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/METEO/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/CO2/WebService/001/Operation/001"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "nfo-co2-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/nfo-co2-plugin.git",
+        "runtime": "java",
+        "executable": "target/WP09_NFOCO2Plugin-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.nfo.core.NFOInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/CO2_STATIONS/WebService/001/Operation/001"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "nfo-radon-covjson-go",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/nfo-radon-covjson-go.git",
+        "runtime": "binary",
+        "executable": "binary",
+        "arguments": "",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.covjson",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/RADON/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://radon.infp.ro/epos-dcat-ap/NearFaultObjservatory/NIEP/RADON/Webservice/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/KOERI/RADON/WebService/001/Operation/001"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "quakeml-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/quakeml-plugin.git",
+        "runtime": "java",
+        "executable": "target/QuakeML-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.quakeml.core.QuakeMLInvoker",
+        "enabled": true,
+        "inputFormat": "application/xml",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/AHEAD/restful/macroseismic/Operation"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/Dataset/001/EMSC/operation"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/CRL/event/Webservice/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/irpinia/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/KOERI/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/SED/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/NIEP/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/irpinia/event/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/Event/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/NIEP/Event/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/KOERI/Event/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/volcano-observations/WebService/DDSS0027/Operation/IPGP"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/AHEAD/restful/fdsnws-event/Operation"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/CRL/HistEQ/WebService/001/Operation/001"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "nfo-radon-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/nfo-radon-plugin.git",
+        "runtime": "java",
+        "executable": "target/WP09-NFORadon-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.nfo.core.NFOInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/RADON_STATIONS/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://radon.infp.ro/epos-dcat-ap/NearFaultObjservatory/NIEP/RADON_STATIONS/Webservice/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/KOERI/RADON_STATIONS/WebService/001/Operation/001"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "bibliography-no-conversion",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/bibliography-no-conversion.git",
+        "runtime": "java",
+        "executable": "target/WP08_BibliographyPlugin-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.bibliography.core.BibliographyInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.table.geo+json",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/AHEAD/restful/bibliography/Operation"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "msl-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/msl-plugin.git",
+        "runtime": "java",
+        "executable": "target/WP16_MSLPlugin-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.msl.core.MSLInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.table.geo+json",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/multi-scale-laboratories/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/multi-scale-laboratories/WebService/002/Operation/002"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/multi-scale-laboratories/WebService/003/Operation/003"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/multi-scale-laboratories/WebService/006/Operation/006"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/multi-scale-laboratories/WebService/011/Operation/011"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/multi-scale-laboratories/WebService/013/Operation/013"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/multi-scale-laboratories/WebService/012/Operation/012"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "satd-plugin-models",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/satd-plugin-models.git",
+        "runtime": "java",
+        "executable": "target/SATDPluginModels-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.satellite.core.SATDInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "https://catalog.terradue.com/gep-epos/SatelliteObservations/WebService/MODEL/Operation/Search"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "ah-list-of-applications-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/ah-list-of-applications-plugin.git",
+        "runtime": "java",
+        "executable": "target/WP14_List_of_applications-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.ahapplications.core.AHApplicationsInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.table.geo+json",
+        "relations": [
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/apps/sspe"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/apps/sfm"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/apps/esa"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/apps/hra"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/apps/dt"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/apps/conv"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/apps/rt"
+          },
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/apps/vis"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "ah-episodes-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/ah-episodes-plugin.git",
+        "runtime": "java",
+        "executable": "target/WP14_Episodes-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.ahepisodes.core.AHEpisodesInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "anthropogenic_hazards/webservice/is-epos_platform/episodes"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "satd-wms",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/satd-wms.git",
+        "runtime": "java",
+        "executable": "target/SATDWMSPlugin-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.satellite.core.SATDWMSInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": []
+      },
+      {
+        "version": "main",
+        "name": "seismo-beachballs",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/seismo-beachballs.git",
+        "runtime": "binary",
+        "executable": "seismo-beachballs",
+        "arguments": "",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/Dataset/003/EMSC/operation"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "seismo-fdsnevent",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/seismo-fdsnevent.git",
+        "runtime": "binary",
+        "executable": "seismo-fdsnevent",
+        "arguments": "",
+        "enabled": true,
+        "inputFormat": "application/xml",
+        "outputFormat": "application/epos.covjson",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/Dataset/001/EMSC/operation"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/AHEAD/restful/fdsnws-event/Operation"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/CRL/event/Webservice/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/irpinia/event/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/KOERI/Event/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/Event/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/NIEP/Event/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/CRL/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/irpinia/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/KOERI/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/SED/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/NIEP/HistEQ/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/volcano-observations/WebService/DDSS0027/Operation/IPGP"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "seismo-wfcatalog",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/seismo-wfcatalog.git",
+        "runtime": "binary",
+        "executable": "seismo-wfcatalog",
+        "arguments": "",
+        "enabled": true,
+        "inputFormat": "application/xml",
+        "outputFormat": "application/epos.graph.covjson",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/001/RESIF"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/BGR"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/GFZ"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/ICGC"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/INGV"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/KOERI"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/LMU"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/NIEP"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/NOA"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/ODC"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/SED"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/UIB"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/004/Operation/004/FEDERATOR"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/003/Operation/003/BGS"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "stationxml-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/stationxml-plugin.git",
+        "runtime": "java",
+        "executable": "target/StationXML-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.stationxml.core.StationXMLInvoker",
+        "enabled": true,
+        "inputFormat": "application/xml",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/geophysics/WebService/002/Operation/002"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/KARST/SEISMIC_STATION/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/KOERI"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/BGR"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/008/Operation/008/FEDERATOR"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/GFZ"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/ICGC"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/INGV"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/LMU"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/NIEP"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/NOA"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/SED"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/UIB"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/ODC"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/001/RESIF"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/Seismology/WebService/002/Operation/002/BGS"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/NIEP/INFRASOUND_STATION/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://radon.infp.ro/epos-dcat-ap/NearFaultObjservatory/NIEP/RADON_STATIONS/Webservice/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/NIEP/SEISMIC_STATION/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/CRL/WebService/002/Operation/002/NOA"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/CRL/WebService/002/Operation/002/RESIF"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/CRL/geophysics/WebService/002/Operation/002/RESIF"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/irpinia/station/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/KOERI/SEISMIC_STATION/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/NearFaultObservatory/TABOO/SEISMIC_STATION/WebService/001/Operation/001"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/volcano-observations/WebService/DDSS001-2/Operation/station/RESIF"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/volcano-observations/WebService/DDSS005/Operation/station/IPGP"
+          },
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/volcano-observations/WebService/DDSS006/Operation/station/IPGP"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "tsu-hazard-model",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/tsu-hazard-model.git",
+        "runtime": "java",
+        "executable": "target/TSU-Hazard-Model-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.tsu.core.TSUInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "Tsunami/NEAMTHM18/Operation/NEAMTHM18_Full_Dataset"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "vol-bulkrocketna",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/vol-bulkrocketna.git",
+        "runtime": "java",
+        "executable": "target/VOLBulkRockEtna-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.vol.core.VOLInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "rest/bulk-rock/operation"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "vol-generic-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/vol-generic-plugin.git",
+        "runtime": "java",
+        "executable": "target/VOLGeneric-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.vol.core.VOLInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "https://www.epos-eu.org/epos-dcat-ap/volcano-observations/WebService/DDSS0032/Operation/report/IPGP"
+          },
+          {
+            "relationId": "EarthquakeParameters/INGV/DDSS-027/operation"
+          },
+          {
+            "relationId": "MultiParameterStationsListItaly/INGV/DDSS-067/operation"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "vol-generic-table-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/vol-generic-table-plugin.git",
+        "runtime": "java",
+        "executable": "target/VOLGenericTable-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.vol.core.VOLInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.table.geo+json",
+        "relations": []
+      },
+      {
+        "version": "main",
+        "name": "vol-interferograms-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/vol-interferograms-plugin.git",
+        "runtime": "java",
+        "executable": "target/VOLInterferogram-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.volinterferogram.core.VOLInterferogramInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "INTERFEROGRAMS/INGV/DDSS-050/operation"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "vol-lava-flow-invasion",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/vol-lava-flow-invasion.git",
+        "runtime": "binary",
+        "executable": "vol-lava-flow-invasion",
+        "arguments": "",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "HazardMap/Lavaflow/operation"
+          },
+          {
+            "relationId": "SusceptibilityMap/operation"
+          },
+          {
+            "relationId": "HazardMap/PDCs/operation"
+          },
+          {
+            "relationId": "HazardMap/Probabilistic/operation"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "vol-projects-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/vol-projects-plugin.git",
+        "runtime": "java",
+        "executable": "target/VOLProjects-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.volprojects.core.VOLProjectsInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.table.geo+json",
+        "relations": [
+          {
+            "relationId": "Software/operation"
+          }
+        ]
+      },
+      {
+        "version": "main",
+        "name": "vol-weekly-reports-plugin",
+        "description": "plugin description",
+        "version_type": "branch",
+        "repository": "https://gitlab.com/epos-eric/epos/converter-plugins/vol-weekly-reports-plugin.git",
+        "runtime": "java",
+        "executable": "target/VOLReports-main-jar-with-dependencies.jar",
+        "arguments": "org.epos.volreports.core.VOLReportsInvoker",
+        "enabled": true,
+        "inputFormat": "application/json",
+        "outputFormat": "application/epos.geo+json",
+        "relations": [
+          {
+            "relationId": "REPORTS/INGV/DDSS-031/operation"
+          },
+          {
+            "relationId": "VONA/INGV/DDSS-032/operation"
+          }
+        ]
+      }
+    ]
+---
 {{- if and .Values.jobs.enabled .Values.jobs.pluginPopulator.enabled }}
 apiVersion: batch/v1
 kind: Job

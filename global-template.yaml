@@ -6,6 +6,7 @@
 global:
   services:
     hosts:
+      protocol: http
       host: localhost
       dataportal: /dataportal/
       backoffice: /backoffice/
