@@ -4,3 +4,4 @@ epos-chart/*tgz
 epos-chart
 testing-values.yml
 brgm-values-dev.yml
+jobs-template.yaml
