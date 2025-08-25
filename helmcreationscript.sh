@@ -1221,6 +1221,18 @@ spec:
         resources:
           {{ .Values.jobs.pluginPopulator.resources | toYaml | nindent 10 }}
         {{- end }}
+        volumeMounts:
+        - name: populate
+          mountPath: "/populate"
+          readOnly: true
+      volumes:
+      - name: populate
+        configMap:
+          name: populate
+          items:
+          - key: "populate.json"
+            path: "populate.json"
+
 {{- end }}
 EOF
     
