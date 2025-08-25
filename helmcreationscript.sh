@@ -83,8 +83,8 @@ jobs:
   # Job 2: Plugin Populator (post-install hook, weight 2)
   pluginPopulator:
     enabled: true
-    image: "epos-ci.brgm.fr:5005/epos/converter-plugins/populate-environment-script"
-    tag: "docker"
+    image: epos/epos-plugin-populator
+    tag: v0.1.0
     hookWeight: "2"
     backoffLimit: 3
     activeDeadlineSeconds: 3600
@@ -239,10 +239,11 @@ EOF
     
     # Job 2: pluginpopulator.yaml (post-install hook, weight 1)
     cat > "$templates_dir/pluginpopulator-job.yaml" << 'EOF'
+{{- if and .Values.jobs.enabled .Values.jobs.pluginPopulator.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: populate
+  name: '{{ include "epos-chart.fullname" . }}-populate'
 data:
   # file-like keys
   populate.json: |
@@ -1162,6 +1163,7 @@ data:
       }
     ]
 ---
+{{- end }}
 {{- if and .Values.jobs.enabled .Values.jobs.pluginPopulator.enabled }}
 apiVersion: batch/v1
 kind: Job
@@ -1212,6 +1214,30 @@ spec:
       - name: pluginpopulator-container
         image: '{{ .Values.jobs.pluginPopulator.image }}:{{ .Values.jobs.pluginPopulator.tag }}'
         imagePullPolicy: Always
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          set -e
+          echo "Starting EPOS Plugin Populator..."
+          echo "Resources endpoint: $RESOURCES_ENDPOINT"
+          echo "Converter endpoint: $CONVERTER_ENDPOINT"
+          echo "Populate file: ./populate/populate.json"
+
+          ls -la
+          
+          if [ ! -f "./populate/populate.json" ]; then
+            echo "ERROR: ./populate/populate.json not found!"
+            ls -la ./populate* || true
+            exit 1
+          fi
+          
+          echo "File found, showing content preview:"
+          head -10 ./populate/populate.json || true
+          
+          echo "Executing: epos-plugin-populator populate ./populate/populate.json --resources $$RESOURCES_ENDPOINT --converter $$CONVERTER_ENDPOINT"
+          exec ./epos-plugin-populator populate ./populate/populate.json \
+            --resources "$$RESOURCES_ENDPOINT" \
+            --converter "$$CONVERTER_ENDPOINT"
         env:
         - name: CONVERTER_ENDPOINT
           value: "http://{{ include "epos-chart.fullname" . }}-converterservice:8080/api/converter-service/v1"
@@ -1222,13 +1248,13 @@ spec:
           {{ .Values.jobs.pluginPopulator.resources | toYaml | nindent 10 }}
         {{- end }}
         volumeMounts:
-        - name: populate
+        - name: '{{ include "epos-chart.fullname" . }}-populate'
           mountPath: "/populate"
           readOnly: true
       volumes:
-      - name: populate
+      - name: '{{ include "epos-chart.fullname" . }}-populate'
         configMap:
-          name: populate
+          name: '{{ include "epos-chart.fullname" . }}-populate'
           items:
           - key: "populate.json"
             path: "populate.json"
