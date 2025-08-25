@@ -27,6 +27,11 @@ global:
       password: changeme
       vhost: changeme
       host: '{{ include "epos-chart.fullname"  . }}-rabbitmq'
+    
+    naming:
+      separator: ''
+    
+    list: '{{ include "epos-chart.fullname"  . }}-resourcesservice,{{ include "epos-chart.fullname"  . }}-ingestorservice,{{ include "epos-chart.fullname"  . }}-externalaccessservice,{{ include "epos-chart.fullname"  . }}-emailsenderservice'
 
   # Docker registry configuration for private images
   imagePullSecrets:

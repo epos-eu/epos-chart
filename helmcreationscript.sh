@@ -453,7 +453,7 @@ spec:
           duration=$SECONDS
           log "✓ Total ingestion time: $((duration/60))m $((duration%60))s"
 
-          curl -fsS -X POST --header "accept: application/json" "http://{{ include "epos-chart.fullname" . }}-resources-ervice:8080/api/resources-service/v1/invalidate"
+          curl -fsS -X POST --header "accept: application/json" "http://{{ include "epos-chart.fullname" . }}-resourcesservice:8080/api/resources-service/v1/invalidate"
 
           log "Metadata population completed successfully!"
           
