@@ -5,3 +5,5 @@ epos-chart
 testing-values.yml
 brgm-values-dev.yml
 jobs-template.yaml
+test-final.yaml
+command.sh

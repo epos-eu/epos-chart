@@ -1,0 +1,331 @@
+global:
+  services:
+    hosts:
+      protocol: http
+      host: localhost
+      dataportal: /dataportal/
+      backoffice: /backoffice/
+      gateway: /api/v1/
+      api_host: 'http://{{ include "epos-chart.fullname"  . }}-gateway:5000/api'
+    database:
+      username: postgres
+      password: changeme
+      dbname: cerif
+      host: '{{ include "epos-chart.fullname"  . }}-metadatadatabase'
+      port: 5432
+      connection_string: >-
+        jdbc:postgresql://{{ tpl .Values.global.services.database.host . }}:{{
+        .Values.global.services.database.port }}/{{
+        .Values.global.services.database.dbname }}?user={{
+        .Values.global.services.database.username }}&password={{
+        .Values.global.services.database.password }}
+      persistence_metadata: EPOSDataModel
+      persistence_sharing: EPOSSharing
+    rabbitmq:
+      username: rabbitmq-user
+      password: changeme
+      vhost: changeme
+      host: '{{ include "epos-chart.fullname"  . }}-rabbitmq'
+    naming:
+      separator: ''
+    list: '{{ include "epos-chart.fullname"  . }}-resourcesservice,{{ include "epos-chart.fullname"  . }}-ingestorservice,{{ include "epos-chart.fullname"  . }}-externalaccessservice,{{ include "epos-chart.fullname"  . }}-emailsenderservice'
+  imagePullSecrets:
+    enabled: true
+    secretName: "epos-registry-secret"
+    registry:
+      server: "epos-ci.brgm.fr:5005"
+      username: ""
+      password: ""
+      email: ""
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  securityContext: {}
+  resources: {}
+jobs:
+  enabled: true
+  initDb:
+    enabled: true
+    image: epos-ci.brgm.fr:5005/epos/metadata-database/restorejob
+    tag: master-refactor
+    connectionString: >-
+        postgresql://{{ tpl .Values.global.services.database.host . }}:{{
+        .Values.global.services.database.port }}/{{
+        .Values.global.services.database.dbname }}?user={{
+        .Values.global.services.database.username }}&password={{
+        .Values.global.services.database.password }}
+    pgConnectionString: >-
+        postgresql://{{ tpl .Values.global.services.database.host . }}:{{
+        .Values.global.services.database.port }}/{{
+        .Values.global.services.database.dbname }}?user={{
+        .Values.global.services.database.username }}&password={{
+        .Values.global.services.database.password }}
+    hookWeight: "1"
+    backoffLimit: 3
+    activeDeadlineSeconds: 1800
+    waitForServices:
+      - 'gateway:5000'
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  metadataPopulator:
+    enabled: true
+    image: epos-ci.brgm.fr:5005/epos/metadata-cache
+    tag: development
+    hookWeight: "2"
+    backoffLimit: 3
+    activeDeadlineSeconds: 3600
+    securityCode: "changeme"
+    maxParallel: 10
+    waitForServices:
+      - 'gateway:5000'
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+  pluginPopulator:
+    enabled: true
+    image: epos/epos-plugin-populator
+    tag: v0.1.0
+    hookWeight: "3"
+    backoffLimit: 3
+    activeDeadlineSeconds: 3600
+    waitForServices:
+      - 'gateway:5000'
+    resources:
+      requests:
+        cpu: 10m
+        memory: 100Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+backofficeservice:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/backoffice-service
+    tag: main
+  environment:
+    CONNECTION_POOL_INIT_SIZE: '1'
+    CONNECTION_POOL_MAX_SIZE: '5'
+    CONNECTION_POOL_MIN_SIZE: '1'
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+backofficeui:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/epos-backoffice-gui
+    tag: develop
+  ingress:
+    annotations: {}
+    host: '{{ tpl .Values.global.services.hosts.host . }}'
+    path: '{{ tpl .Values.global.services.hosts.backoffice . }}'
+    class: nginx
+    enabled: true
+    tls:
+      enabled: false
+      secretName: ''
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+converter_routine:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/converter-routine-go
+    tag: main
+  persistence:
+    converter:
+      storageClass: '-'
+      size: 1Gi
+      accessMode:
+        - ReadWriteOnce
+      enabled: true
+  environment:
+    LOG_LEVEL: INFO
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+converterservice:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/converter-service-go
+    tag: main
+  persistence:
+    converter:
+      storageClass: '-'
+      size: 1Gi
+      accessMode:
+        - ReadWriteOnce
+      enabled: true
+  environment:
+    LOG_LEVEL: INFO
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+dataportal:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/epos-gui/deploy
+    tag: new-gui-master
+  ingress:
+    annotations: {}
+    host: '{{ tpl .Values.global.services.hosts.host . }}'
+    path: '{{ tpl .Values.global.services.hosts.dataportal . }}'
+    class: nginx
+    enabled: true
+    tls:
+      enabled: false
+      secretName: ''
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+email_senderservice:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/email-sender-service
+    tag: main
+  environment:
+    CONNECTION_POOL_INIT_SIZE: '1'
+    CONNECTION_POOL_MAX_SIZE: '5'
+    CONNECTION_POOL_MIN_SIZE: '1'
+    DEV_EMAILS: foo.bar@somewhere.com;change.me@somewhere.com
+    ENVIRONMENT_TYPE: development
+    MAIL_API_KEY: changeme
+    MAIL_API_URL: 'https://api.example.email/'
+    MAIL_HOST: mail.domain.com
+    MAIL_PASSWORD: changeme
+    MAIL_TYPE: API
+    MAIL_USER: user@email.com
+    SENDER: data-portal
+    SENDER_DOMAIN: your.domain.com
+    SENDER_NAME: EPOS Platform Opensource
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+external_accessservice:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/external-access-service
+    tag: main
+  environment:
+    CONNECTION_POOL_INIT_SIZE: '1'
+    CONNECTION_POOL_MAX_SIZE: '5'
+    CONNECTION_POOL_MIN_SIZE: '1'
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+gateway:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/epos-api-gateway
+    tag: main
+  ingress:
+    annotations: {}
+    host: '{{ tpl .Values.global.services.hosts.host . }}'
+    path: '{{ tpl .Values.global.services.hosts.gateway . }}'
+    class: nginx
+    enabled: true
+    tls:
+      enabled: false
+      secretName: ''
+  environment:
+    AAIservice_ENDPOINT: ''
+    IS_AAI_ENABLED: 'false'
+    LOAD_BACKOFFICE_API: 'false:false'
+    LOAD_CONVERTER_API: 'false:false'
+    LOAD_EMAIL_SENDER_API: 'false:false'
+    LOAD_EXTERNAL_ACCESS_API: 'false:false'
+    LOAD_INGESTOR_API: 'false:false'
+    LOAD_RESOURCES_API: 'false:false'
+    LOAD_SHARING_API: 'false:false'
+    PREFIX: '{{ include "epos-chart.fullname"  . }}-'
+    SECURITY_KEY: ''
+    SPLITTER: ''
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+ingestorservice:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/ingestor-service
+    tag: main
+  environment:
+    CONNECTION_POOL_INIT_SIZE: '1'
+    CONNECTION_POOL_MAX_SIZE: '5'
+    CONNECTION_POOL_MIN_SIZE: '1'
+    INGESTOR_HASH: FA9BEB99E4029AD5A6615399E7BBAE21356086B3
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+metadatadatabase:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/metadata-database/deploy
+    tag: master-refactor
+  persistence:
+    psqldata:
+      storageClass: '-'
+      size: 1Gi
+      accessMode:
+        - ReadWriteOnce
+      enabled: true
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+pullSecrets: []
+rabbitmq:
+  repository:
+    image: rabbitmq
+    tag: 3.13.7-management
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+resourcesservice:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/resources-service
+    tag: main
+  environment:
+    APICONTEXT: /api/v1
+    APIHOST: http://localhost
+    CONNECTION_POOL_INIT_SIZE: '1'
+    CONNECTION_POOL_MAX_SIZE: '5'
+    CONNECTION_POOL_MIN_SIZE: '1'
+    FACETS_DEFAULT: 'true'
+    FACETS_TYPE_DEFAULT: categories
+    MONITORING: 'false'
+    MONITORING_PWD: ''
+    MONITORING_URL: ''
+    MONITORING_USER: ''
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
+sharingservice:
+  repository:
+    image: epos-ci.brgm.fr:5005/epos/configuration-sharing-service
+    tag: main
+  replicas: 1
+  nodeSelector: {}
+  resources: {}
+  imagePullPolicy: Always
+  serviceAccount: ''
