@@ -11,6 +11,7 @@ global:
       dataportal: /dataportal/
       backoffice: /backoffice/
       gateway: /api/v1/
+      basecontext: /
       api_host: 'http://{{ include "epos-chart.fullname"  . }}-gateway:5000/api'
 
     database:

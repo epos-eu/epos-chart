@@ -149,7 +149,7 @@ services:
         - AAI_SERVICE_ENDPOINT
       katenary.v3/map-env: |-
         SPLITTER: '{{ tpl .Values.global.services.naming.separator . }}'
-        BASECONTEXT: '{{ tpl .Values.global.services.hosts.gateway . }}'
+        BASECONTEXT: '{{ tpl .Values.global.services.hosts.basecontext . }}'
       katenary.v3/ingress: |-
         enabled: true
         hostname: '{{ tpl .Values.global.services.hosts.host . }}'
