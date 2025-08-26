@@ -1495,6 +1495,49 @@ update_imagepullsecrets() {
     fi
 }
 
+update_volumeclaims() {
+    local file="$1"
+
+    if [ -f "$file" ]; then
+        echo "Processing $(basename "$(dirname "$file")")/$(basename "$file")..."
+        
+        # Controlla se ci sono pattern da sostituire
+        if grep -q "{{ include \"epos-chart\.fullname\" \. }}-converter\(service\|routine\)-converter" "$file"; then
+            echo "  🔄 Found converter references, replacing with simplified name..."
+            
+            # Sostituisce entrambi i pattern in un comando
+            sed -i 's/{{ include "epos-chart\.fullname" \. }}-converter\(service\|routine\)-converter/{{ include "epos-chart.fullname" . }}-converter/g' "$file"
+            
+            echo "  ✅ Replaced converter references in $(basename "$file")"
+        fi
+      
+    else
+        echo "  ⚠️  File $(basename "$file") not found"
+    fi
+}
+
+update_databasecheck() {
+    local file="$1"
+
+    if [ -f "$file" ]; then
+        echo "Processing $(basename "$(dirname "$file")")/$(basename "$file")..."
+        
+        # Controlla se ci sono pattern da sostituire
+        if grep -q "{{ include \"epos-chart.fullname\" . }}-metadatadatabase 5432" "$file"; then
+            echo "  🔄 Found database busybox check references, replacing with correct name..."
+            
+            # Sostituisce entrambi i pattern in un comando
+            sed -i 's/{{ include "epos-chart.fullname" . }}-metadatadatabase 5432/{{ tpl .Values.global.services.database.host . }} "{{ tpl (.Values.global.services.database.port | toString) . }}"/g' "$file"
+            
+            echo "  ✅ Replaced database busybox check  references in $(basename "$file")"
+        fi
+      
+    else
+        echo "  ⚠️  File $(basename "$file") not found"
+    fi
+}
+
+
 echo "🔍 Processing deployment files..."
 
 if [ ! -d "$CHART_DIR/templates" ]; then
@@ -1504,7 +1547,20 @@ fi
 
 # Process all deployment files
 find "$CHART_DIR/templates" -name "deployment.yaml" | while read -r file; do
+    update_volumeclaims "$file"
     update_imagepullsecrets "$file"
+    update_databasecheck "$file"
+done
+
+find "$CHART_DIR/templates" -name "converter.volumeclaim.yaml" | while read -r file; do 
+    update_volumeclaims "$file"
+    if grep -q "routine" "$file"; then
+      echo "  🗑️ Found 'routine' in file, deleting entire file..."
+            
+      rm "$file"
+            
+      echo "  ✅ Deleted file $(basename "$file") (contained 'routine')"
+    fi
 done
 
 echo ""
