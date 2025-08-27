@@ -7,4 +7,5 @@ brgm-values-dev.yml
 jobs-template.yaml
 test-final.yml
 brgm-values-dev-no-db.yml
+brgm-values-dev-final.yml
 command.sh

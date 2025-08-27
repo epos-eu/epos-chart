@@ -89,6 +89,12 @@ services:
       - SECURITY_KEY=${SECURITY_KEY}
       - AAI_SERVICE_ENDPOINT=${AAI_SERVICE_ENDPOINT}
       - SPLITTER=-
+      - BRGM_BASE_URL=
+      - BRGM_TOKEN=
+      - SCIENTIFIC_BASE_URL=
+      - SCIENTIFIC_TOKEN=
+      - FEEDBACK_TOKEN=
+      - FEEDBACK_DESTINATION_URL=
     #healthcheck:
     #  test: python3 -c 'import urllib.request; resp=urllib.request.urlopen("http://localhost:5000/api/v1/ui", timeout=5); print(f"Status {resp.getcode()}"); exit(0 if resp.getcode() == 200 else 1)' || exit 1
     #  interval: 30s
@@ -147,6 +153,12 @@ services:
         - IS_AAI_ENABLED
         - SECURITY_KEY
         - AAI_SERVICE_ENDPOINT
+        - BRGM_BASE_URL
+        - BRGM_TOKEN
+        - SCIENTIFIC_BASE_URL
+        - SCIENTIFIC_TOKEN
+        - FEEDBACK_TOKEN
+        - FEEDBACK_DESTINATION_URL
       katenary.v3/map-env: |-
         SPLITTER: '{{ tpl .Values.global.services.naming.separator . }}'
         BASECONTEXT: '{{ tpl .Values.global.services.hosts.basecontext . }}'
